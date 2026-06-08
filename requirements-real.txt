@@ -1,0 +1,24 @@
+# Optional real-data / real-model environment for the C Part experiments.
+# The current repository keeps data/raw out of git; run scripts/fetch_gtex_sqtl_cases.py
+# after network access is available.
+numpy
+pandas
+scikit-learn
+matplotlib
+biopython
+pyfaidx
+torch
+transformers
+fair-esm
+multimolecule
+
+# Windows/Python 3.12 notes:
+# - spliceai currently fails on pysam build in this environment.
+# - mmsplice currently fails on cyvcf2 build in this environment.
+# - maxentpy is not available from the configured pip index.
+# Prefer WSL/Linux or a separate conda Linux environment for these packages:
+# spliceai
+# mmsplice
+# kipoi
+# kipoi_veff
+# maxentpy

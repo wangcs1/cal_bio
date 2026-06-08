@@ -2,6 +2,27 @@
 
 生成时间：2026-06-08 21:08:22
 
+## 0. 真实资源补充状态（2026-06-09 更新）
+
+上一版 C Part 是在缺少 raw 数据和真实模型权重的条件下完成的 synthetic benchmark。根据后续要求，已经继续补充真实资源：
+
+- `data/raw/genome.fa`：已下载并解压，GENCODE v49 / GRCh38 primary assembly genome FASTA。
+- `data/raw/gencode.gtf`：已下载并解压，GENCODE v49 primary assembly annotation GTF。
+- `data/raw/clinvar.vcf`：已下载并解压，使用 NCBI ClinVar GRCh38 archive_2.0 `clinvar_20260530.vcf.gz`，共 4,434,969 条变异记录。
+- `data/raw/gtex_sqtl.tsv` 与 `data/raw/known_splice_events.tsv`：已通过 GTEx Portal API 拉取小型真实 case study。
+- `data/raw/gencode.db`：已由 `gencode.gtf` 构建，用于真实 Pangolin 运行。
+- RNA-FM 与 RNABERT：已安装 `multimolecule`，并成功下载/加载 `multimolecule/rnafm` 和 `multimolecule/rnabert` 预训练权重。
+- Pangolin：已安装 GitHub `tkzeng/Pangolin`，命令行可用，并已用真实 `genome.fa + gencode.db + ClinVar smoke CSV` 跑通 GPU smoke test。
+- GPU：本机可用 `NVIDIA GeForce RTX 5070 Ti`。
+
+仍未完全完成的真实模型项：
+
+- SpliceAI：Windows + Python 3.12 下 `pysam` 构建失败。
+- MMSplice：Windows + Python 3.12 下 `cyvcf2` 构建失败。
+- MaxEntPy：当前 pip 源没有可用 `maxentpy` 包；代码中仍保留 MaxEntScan consensus proxy。
+
+详细状态见 `REAL_RESOURCE_STATUS.md`。
+
 ## 1. 本次完成范围
 
 本次在当前仓库内补齐并运行了 C Part 的完整离线交付链路：
