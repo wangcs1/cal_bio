@@ -1,25 +1,39 @@
-# 基于 RNA 序列基础模型的剪接位点识别与异常剪接变异效应预测
+# 多尺度 RNA 剪接建模与异常剪接变异效应预测
 
-英文题目：**Splice Site Recognition and Aberrant Splicing Variant Effect Prediction Based on RNA Foundation Models**
+英文题目：**Multi-scale RNA Splicing Modeling and Aberrant Splicing Variant Effect Prediction Based on RNA Foundation Models and Genomic Regulatory Models**
 
-本项目围绕 RNA 剪接位点预测任务，评估 RNA 序列基础模型是否真正学到了可迁移的剪接信号。核心思路是将 RNA-FM、RNABERT 等通用 RNA foundation model 与剪接任务专用模型 SpliceAI、轻量 CNN baseline 放在统一实验框架下比较，回答两个问题：
+本项目围绕 RNA 剪接建模与异常剪接变异效应预测，评估不同类型序列模型是否真正学到了可迁移、可解释的剪接调控规则。项目不再只做普通的“RNA 模型调研”，而是将 RNA foundation model、剪接任务专用模型和长程基因组调控模型放在统一实验框架下比较，重点回答三个问题：
 
-1. 模型能不能识别正常 donor / acceptor 剪接位点？
-2. 模型能不能感知突变对剪接信号的破坏？
+1. **剪接位点识别**：模型能否区分 donor site、acceptor site 和 non-splice site？
+2. **多尺度上下文建模**：模型是否只依赖局部 GT/AG motif，还是能够利用更长程的 intron/exon context、hard negative motif、组织特异性 splice usage 等信息？
+3. **异常剪接变异效应预测**：模型能否判断一个 SNV 是否会破坏正常剪接、激活 cryptic splice site，并进一步解释其可能影响的 splice junction 或组织特异性剪接模式？
 
-建议将实验组织为三个部分：
-
-| 实验 | 目标 | 必做程度 |
-| --- | --- | --- |
-| 实验一：剪接位点三分类 | 判断中心位置是 donor site、acceptor site 还是 non-splice site | 必做 |
-| 实验二：上下文长度消融 | 比较不同窗口长度对模型性能的影响 | 必做 |
-| 实验三：异常剪接变异效应预测 | 比较 wild-type 与 mutant 序列的剪接分数变化 | 加分项 |
+项目最终希望形成一个从**剪接位点分类**到**多尺度上下文分析**再到**variant effect prediction**的完整实验链条，使课设不仅是模型跑分，而是更接近当前 AI for Science 中“从序列预测到分子机制解释”的研究范式。
 
 ---
 
-## 1. 推荐项目结构
+## 0. 项目动机
 
-当前仓库只有 `guidance.md`，建议后续按下面结构补充代码和结果，便于复现实验和撰写论文。
+高通量测序技术已经能够快速获得大规模基因组和转录组数据，但如何从原始核酸序列中解释调控规则、功能后果和疾病机制，仍然是计算生物学中的核心问题。RNA 剪接是连接基因组序列和成熟转录本功能的关键步骤，它不仅依赖 donor site、acceptor site、branch point、polypyrimidine tract 等局部信号，也受到外显子 / 内含子剪接增强子、剪接沉默子、RNA-binding proteins、组织特异性调控和长程上下文共同影响。
+
+大量疾病相关变异并不直接改变蛋白编码序列，却可能通过破坏 canonical splice site、激活 cryptic splice site 或改变 alternative splicing pattern 影响基因功能。传统方法通常依赖局部 motif 或人工特征，难以系统建模长程上下文和组织特异性剪接调控。近年来，RNA-FM、RNABERT、RNAErnie 等 RNA foundation model 通过自监督学习从大量 RNA 序列中获得通用表示；SpliceAI、Pangolin 等剪接任务专用模型在 splice site 和 splice variant prediction 上表现突出；Borzoi、AlphaGenome 等长程基因组调控模型进一步尝试从 DNA 序列预测 RNA-seq coverage、splice junction、splice site usage、gene expression 等多种分子表型。
+
+因此，本项目拟以 RNA 剪接为切入点，比较三类模型在剪接相关任务中的能力边界：通用 RNA foundation model 是否真正学到了可迁移的剪接语法？剪接任务专用模型相比 foundation model 的优势来自哪里？长程基因组调控模型能否把“是否影响剪接”的二分类问题推进到“影响哪个 splice junction、在哪个组织中影响更明显、产生什么分子后果”的机制解释层面？
+
+---
+
+## 1. 实验总览
+
+| 实验 | 名称 | 目标 | 模型 | 必做程度 |
+| --- | --- | --- | --- | --- |
+| 实验一 | 剪接位点三分类 | 判断中心位置是 donor、acceptor 还是 non-splice | CNN、RNA-FM、RNABERT、SpliceAI | 必做 |
+| 实验二 | 多尺度上下文与 hard negative 剪接建模 | 检验模型是否真正利用上下文，而非只识别 GT/AG motif | RNA-FM、RNABERT、SpliceAI、Pangolin、Borzoi/AlphaGenome case study | 必做 + 扩展 |
+| 实验三 | 异常剪接变异效应预测 | 预测 SNV 是否造成 donor loss、acceptor loss、donor gain、acceptor gain | RNA-FM zero-shot、RNABERT zero-shot、SpliceAI、Pangolin、MMSplice、MaxEntScan、Borzoi/AlphaGenome case study | 加分重点 |
+| 可解释性 | Attention / in silico mutagenesis / delta profile | 解释模型关注的剪接信号和突变敏感区域 | RNA-FM、RNABERT、CNN、SpliceAI | 建议做 |
+
+---
+
+## 2. 推荐项目结构
 
 ```text
 cal_bio/
@@ -29,34 +43,55 @@ cal_bio/
 │   ├── raw/
 │   │   ├── genome.fa
 │   │   ├── gencode.gtf
-│   │   └── clinvar.vcf
+│   │   ├── clinvar.vcf
+│   │   ├── gtex_sqtl.tsv                 # 可选：GTEx sQTL / splicing QTL
+│   │   └── known_splice_events.tsv        # 可选：已知 alternative splicing events
 │   ├── processed/
-│   │   ├── splice_sites_pm200.csv
 │   │   ├── splice_sites_pm50.csv
 │   │   ├── splice_sites_pm100.csv
+│   │   ├── splice_sites_pm200.csv
 │   │   ├── splice_sites_pm400.csv
-│   │   └── variant_effect.csv
+│   │   ├── splice_sites_pm1000.csv
+│   │   ├── hard_negative_gtag.csv
+│   │   ├── artificial_variant_effect.csv
+│   │   ├── clinvar_splicing_variants.csv
+│   │   └── tissue_splice_usage_cases.csv
 │   └── splits/
 │       ├── train.csv
 │       ├── valid.csv
-│       └── test.csv
+│       ├── test.csv
+│       └── cross_gene_test.csv
 ├── src/
 │   ├── build_splice_site_dataset.py
+│   ├── build_hard_negative_dataset.py
 │   ├── build_variant_dataset.py
+│   ├── build_sqtl_dataset.py
 │   ├── models/
 │   │   ├── cnn.py
 │   │   ├── rnafm_mlp.py
 │   │   ├── rnabert_mlp.py
-│   │   └── spliceai_wrapper.py
+│   │   ├── spliceai_wrapper.py
+│   │   ├── pangolin_wrapper.py
+│   │   ├── mmsplice_wrapper.py
+│   │   ├── maxentscan_wrapper.py
+│   │   ├── borzoi_wrapper.py
+│   │   └── alphagenome_case_study.md
 │   ├── train.py
 │   ├── evaluate.py
-│   ├── run_ablation.py
-│   └── interpret.py
+│   ├── run_exp1_classification.py
+│   ├── run_exp2_multiscale.py
+│   ├── run_exp3_variant_effect.py
+│   ├── run_zero_shot_scoring.py
+│   ├── run_interpretability.py
+│   └── utils.py
 ├── configs/
 │   ├── cnn_pm200.yaml
 │   ├── rnafm_pm200.yaml
 │   ├── rnabert_pm200.yaml
-│   └── ablation.yaml
+│   ├── exp2_multiscale.yaml
+│   ├── exp2_hard_negative.yaml
+│   ├── exp3_variant_effect.yaml
+│   └── interpretability.yaml
 ├── results/
 │   ├── tables/
 │   ├── figures/
@@ -64,35 +99,50 @@ cal_bio/
 └── reports/
     ├── experiment_1.md
     ├── experiment_2.md
-    └── experiment_3.md
+    ├── experiment_3.md
+    ├── model_cards.md
+    └── experiment_log.md
 ```
 
-如果时间有限，可以先只实现 `data/processed/`、`src/train.py`、`src/evaluate.py` 和 `results/`，其余文件按需要逐步补齐。
+最小可完成版本只需要实现：
+
+```text
+data/processed/splice_sites_pm200.csv
+src/models/cnn.py
+src/models/rnafm_mlp.py
+src/models/rnabert_mlp.py
+src/train.py
+src/evaluate.py
+src/run_exp1_classification.py
+src/run_exp2_multiscale.py
+src/run_exp3_variant_effect.py
+results/
+```
+
+高级扩展可以逐步补充 Pangolin、MMSplice、MaxEntScan、Borzoi / AlphaGenome case study。
 
 ---
 
-## 2. 环境准备
+## 3. 环境准备
 
-### 2.1 Python 环境
+### 3.1 Python 环境
 
-建议使用 Python 3.9 或 3.10，并创建独立虚拟环境。
+建议使用 Python 3.9 或 3.10。
 
 ```bash
 conda create -n splice-rna python=3.10
 conda activate splice-rna
 ```
 
-### 2.2 基础依赖
+### 3.2 基础依赖
 
 ```bash
-pip install numpy pandas scikit-learn matplotlib seaborn tqdm biopython pyfaidx
+pip install numpy pandas scikit-learn matplotlib seaborn tqdm biopython pyfaidx pyyaml
 pip install torch torchvision torchaudio
-pip install transformers datasets accelerate
+pip install transformers datasets accelerate einops
 ```
 
-### 2.3 模型依赖
-
-不同模型可能需要额外安装：
+### 3.3 模型依赖
 
 ```bash
 # RNA-FM
@@ -103,52 +153,60 @@ pip install multimolecule
 
 # SpliceAI
 pip install spliceai
+
+# 可选：MMSplice / Kipoi 生态可能依赖较复杂，建议作为扩展
+pip install mmsplice kipoi kipoi_veff || true
 ```
 
-如果 SpliceAI 安装失败，可以先将它作为论文中的强基线说明，或者使用官方预测结果 / 第三方实现作为对照。课程项目优先保证 RNA-FM、RNABERT、CNN baseline 三条线能完整跑通。
+Pangolin、Borzoi、AlphaGenome 可能需要额外环境或官方接口。课程项目中可以采用两种方式：
+
+1. **实跑方式**：安装官方代码或可用 API，对小规模 case study 跑预测。
+2. **论文式 case study 方式**：将其作为长程调控模型扩展模块，描述输入、输出、预期结果和与 SpliceAI / RNA-FM 的差异，若无法运行则不作为主实验指标。
 
 ---
 
-## 3. 数据准备总览
+## 4. 数据准备
 
-### 3.1 原始数据
-
-建议使用人类基因组和注释文件：
+### 4.1 原始数据
 
 | 文件 | 用途 | 示例来源 |
 | --- | --- | --- |
-| `genome.fa` | 提取剪接位点附近序列窗口 | GRCh38 / hg38 |
+| `genome.fa` | 提取候选位点和变异附近序列 | GRCh38 / hg38 |
 | `gencode.gtf` | 提取 exon-intron 边界 | GENCODE |
-| `clinvar.vcf` | 构造真实剪接相关变异样本 | ClinVar |
+| `clinvar.vcf` | 构造真实剪接相关变异 | ClinVar |
+| `gtex_sqtl.tsv` | 构造组织特异性 sQTL / splicing QTL 扩展实验 | GTEx，可选 |
+| `known_splice_events.tsv` | 组织特异性 alternative splicing case study | 可选 |
 
-实验一和实验二只需要 `genome.fa` 与 `gencode.gtf`。实验三可以先用人工突变，不依赖 ClinVar。
+实验一和实验二只需要 `genome.fa` 与 `gencode.gtf`。实验三的最小版本可以使用人工构造突变，不依赖 ClinVar。
 
-### 3.2 样本类别定义
-
-三分类标签统一定义如下：
+### 4.2 样本类别定义
 
 | 标签 | 类别 | 生物学含义 |
 | --- | --- | --- |
-| `0` | donor | 5' splice site，通常位于 exon 到 intron 边界 |
-| `1` | acceptor | 3' splice site，通常位于 intron 到 exon 边界 |
+| `0` | donor | 5' splice site，通常位于 exon → intron 边界 |
+| `1` | acceptor | 3' splice site，通常位于 intron → exon 边界 |
 | `2` | non_splice | 含 GT / AG motif 但不是注释剪接位点的负样本 |
 
-注意：负样本不要从全基因组随机采样普通位置，否则任务会太简单。建议从同一基因或相邻区域中采样 GT / AG motif，但排除已注释的 donor / acceptor 位点，让模型必须学习上下文而不只是识别 GT / AG。
+负样本分为两类：
 
-### 3.3 序列方向
+| 负样本类型 | 构造方式 | 作用 |
+| --- | --- | --- |
+| easy negative | 从非剪接区域随机采样 | sanity check |
+| hard negative | 从同一基因或相邻区域采样 GT/AG motif，但排除注释剪接位点 | 检验模型是否学习上下文，而不是只识别 GT/AG |
 
-构造样本时必须处理正负链：
+### 4.3 序列方向
+
+构造样本时必须统一转录方向：
 
 1. 正链基因按基因组序列直接提取。
-2. 负链基因需要取反向互补序列。
-3. 所有样本最终应统一为转录方向上的序列窗口。
-4. 如果输入 RNA-FM / RNABERT，需要将 DNA 序列中的 `T` 替换为 `U`。
+2. 负链基因取反向互补序列。
+3. 所有样本最终都应以转录方向保存。
+4. 输入 RNA-FM / RNABERT 时，将 DNA 序列中的 `T` 替换为 `U`。
+5. 输入 SpliceAI / Pangolin / Borzoi / AlphaGenome 时，通常保留 DNA 字母 `A/C/G/T`。
 
-### 3.4 数据切分
+### 4.4 数据切分
 
-建议按染色体或基因切分，而不是随机按样本切分，避免同一基因的高度相似窗口同时出现在训练集和测试集。
-
-推荐切分方式：
+推荐按染色体或 gene_id 切分，避免同一基因的相似窗口同时出现在训练集和测试集。
 
 ```text
 train: chr1-chr16
@@ -156,66 +214,60 @@ valid: chr17-chr18
 test : chr19-chr22, chrX
 ```
 
-如果样本量较小，也可以按基因 ID 分组后做 8:1:1 切分。
+另外建议构造一个更严格的测试集：
+
+```text
+cross_gene_test.csv
+```
+
+该测试集要求测试基因与训练基因完全不重叠，用于检验模型是否真正泛化到新基因。
 
 ---
 
-## 4. 实验一：剪接位点三分类实验
+## 5. 实验一：剪接位点三分类
 
-### 4.1 实验目的
+### 5.1 实验目的
 
-验证 RNA 基础模型的 embedding 是否包含剪接位点识别所需的序列上下文信息。
+验证 RNA foundation model 的 embedding 是否包含剪接位点识别所需的序列上下文信息。
 
-需要回答：
+核心问题：
 
 > RNA-FM / RNABERT + MLP 是否优于普通 CNN baseline？它们与任务专用模型 SpliceAI 之间还有多大差距？
 
-### 4.2 输入与输出
+### 5.2 输入与输出
 
-输入是一段以候选位点为中心的序列窗口，建议默认使用：
+默认输入窗口：
 
 ```text
 中心位点 ±200 nt，总长度 401 nt
 ```
 
-输出为三分类概率：
+输出：
 
 ```text
 P(donor), P(acceptor), P(non_splice)
 ```
 
-最终预测类别取概率最大的类别。
+### 5.3 数据构造步骤
 
-### 4.3 数据构造步骤
+1. 从 `gencode.gtf` 中读取转录本和 exon 坐标。
+2. 对每个转录本按转录方向排序 exon。
+3. 对相邻 exon 之间的 intron 边界提取 donor 和 acceptor。
+4. 从 `genome.fa` 提取中心 ±200 nt 的窗口。
+5. 从同一基因附近采样 GT / AG motif 作为 non-splice hard negative。
+6. 过滤 `N` 比例大于 5% 的序列。
+7. 保证 donor:acceptor:non_splice 大致为 1:1:1。
+8. 按染色体或 gene_id 切分 train / valid / test。
 
-1. 从 `gencode.gtf` 中读取所有 protein-coding 或全部转录本的 exon 坐标。
-2. 对每个转录本按基因组坐标排序 exon。
-3. 对相邻 exon 之间的 intron 边界提取：
-   - donor site：exon 结束到 intron 开始的边界。
-   - acceptor site：intron 结束到 exon 开始的边界。
-4. 对每个 donor / acceptor 位点，从 `genome.fa` 提取中心 ±200 nt 的窗口。
-5. 从同一基因附近采样 GT / AG motif 作为 non-splice 负样本，并排除注释边界。
-6. 过滤包含过多 `N` 的序列，建议丢弃 `N` 比例大于 5% 的样本。
-7. 保证三类样本数量尽量均衡，例如 donor:acceptor:non_splice = 1:1:1。
-8. 按染色体或基因切分训练集、验证集、测试集。
-
-建议输出 CSV 格式：
+输出 CSV：
 
 ```text
-sample_id,chrom,start,end,strand,center,label,label_name,sequence,gene_id,transcript_id
+sample_id,chrom,start,end,strand,center,label,label_name,negative_type,sequence,gene_id,transcript_id
 ```
 
-示例：
-
-```text
-ENST000001_donor_1,chr1,10000,10400,+,10200,0,donor,AUGG...,GENE1,ENST000001
-```
-
-### 4.4 模型设置
+### 5.4 模型设置
 
 #### CNN baseline
-
-CNN baseline 用来检验深度基础模型是否真的带来增益。推荐结构：
 
 ```text
 one-hot sequence
@@ -227,19 +279,7 @@ one-hot sequence
 → 3-class softmax
 ```
 
-输入编码：
-
-```text
-A: [1,0,0,0]
-C: [0,1,0,0]
-G: [0,0,1,0]
-T/U: [0,0,0,1]
-N: [0,0,0,0]
-```
-
 #### RNA-FM + MLP
-
-推荐先冻结 RNA-FM，只训练后接 MLP：
 
 ```text
 RNA sequence
@@ -249,49 +289,26 @@ RNA sequence
 → 3-class softmax
 ```
 
-MLP 可使用：
-
-```text
-Linear(hidden_dim, 256)
-ReLU
-Dropout(0.2)
-Linear(256, 3)
-```
+优先冻结 RNA-FM，只训练 MLP head。若时间充足，可以加一个 fine-tuning 版本：只微调最后 1-2 层。
 
 #### RNABERT + MLP
 
-RNABERT 与 RNA-FM 保持同样训练策略：
-
-```text
-RNA sequence
-→ RNABERT frozen encoder
-→ CLS / mean pooling
-→ MLP classifier
-→ 3-class softmax
-```
-
-为了公平比较，RNA-FM 与 RNABERT 应使用同一份数据切分、同样窗口长度、同样训练轮数和同样评价指标。
+与 RNA-FM 保持同样数据、同样窗口长度、同样 pooling、同样训练轮数，保证比较公平。
 
 #### SpliceAI baseline
 
-SpliceAI 是任务专用强基线。它通常输出每个位置作为 donor / acceptor 的概率，使用时需要把中心位置附近的 donor / acceptor 分数转成三分类结果。
-
-建议处理方式：
+SpliceAI 输出每个位置作为 donor / acceptor 的概率。可将中心附近的最大 donor / acceptor 分数转换为三分类：
 
 ```text
-donor_score = SpliceAI 对中心附近 donor 的最大预测分数
-acceptor_score = SpliceAI 对中心附近 acceptor 的最大预测分数
+donor_score = max donor probability near center
+acceptor_score = max acceptor probability near center
 non_splice_score = 1 - max(donor_score, acceptor_score)
 ```
 
-再将三个分数组合成预测类别。
-
-### 4.5 训练配置
-
-推荐起始配置：
+### 5.5 训练配置
 
 ```text
-batch_size: 16 或 32
+batch_size: 16 / 32
 epochs: 10-20
 optimizer: AdamW
 learning_rate:
@@ -302,11 +319,7 @@ early_stopping: valid macro-F1 连续 3 轮不提升则停止
 loss: CrossEntropyLoss
 ```
 
-如果类别不平衡，使用 class weight 或 weighted sampler。
-
-### 4.6 评价指标
-
-必须报告：
+### 5.6 评价指标
 
 ```text
 Accuracy
@@ -315,22 +328,17 @@ Macro Recall
 Macro F1-score
 AUROC
 AUPRC
+Donor-F1
+Acceptor-F1
+Non-splice-F1
 Confusion Matrix
 ```
 
-建议额外报告每一类的指标：
+推荐结果表：
 
 ```text
-Donor F1
-Acceptor F1
-Non-splice F1
+results/tables/experiment_1_metrics.csv
 ```
-
-尤其要观察 donor 和 acceptor 是否相互混淆。如果 donor / acceptor 与 non-splice 区分较好，但 donor 与 acceptor 混淆严重，说明模型可能学到了 GT / AG motif，却没有充分学到剪接方向和上下文。
-
-### 4.7 推荐结果表
-
-在 `results/tables/experiment_1_metrics.csv` 中保存：
 
 | Model | Accuracy | Macro-F1 | AUROC | AUPRC | Donor-F1 | Acceptor-F1 | Non-splice-F1 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -339,299 +347,429 @@ Non-splice F1
 | RNA-FM + MLP |  |  |  |  |  |  |  |
 | SpliceAI |  |  |  |  |  |  |  |
 
-推荐图表：
-
-```text
-results/figures/exp1_confusion_matrix_cnn.png
-results/figures/exp1_confusion_matrix_rnafm.png
-results/figures/exp1_confusion_matrix_rnabert.png
-results/figures/exp1_model_comparison_barplot.png
-```
-
-### 4.8 论文中如何解释
-
-如果 RNA-FM / RNABERT 强于 CNN，可以说明：
-
-> RNA 序列基础模型的预训练表示包含一定剪接相关语法，能够迁移到剪接位点识别任务。
-
-如果它们弱于 SpliceAI，可以说明：
-
-> 通用 RNA foundation model 虽然具有迁移潜力，但任务专用监督模型在剪接识别上仍更稳定，尤其可能受益于更长上下文和剪接任务监督信号。
-
 ---
 
-## 5. 实验二：上下文长度消融实验
+## 6. 实验二：多尺度上下文与 hard negative 剪接建模
 
-### 5.1 实验目的
-
-分析剪接位点识别到底主要依赖局部 motif，还是需要更长程上下文。
-
-该实验与 AlphaGenome / sQTL prediction 中强调的 long-range context、splice competition、junction topology 思路对应。虽然本项目规模较小，但可以用窗口长度消融做一个可解释的验证。
-
-### 5.2 窗口长度设置
-
-建议使用：
-
-```text
-±50 nt   -> 总长度 101 nt
-±100 nt  -> 总长度 201 nt
-±200 nt  -> 总长度 401 nt
-±400 nt  -> 总长度 801 nt
-±1000 nt -> 总长度 2001 nt，可选
-```
-
-课程项目中，`±50 / ±100 / ±200 / ±400` 已经足够。`±1000` 对显存和模型最大输入长度要求更高，可以作为可选扩展。
-
-### 5.3 数据构造
-
-保持实验一的中心位点、标签和数据切分不变，只改变提取窗口长度。
-
-关键要求：
-
-1. 不同窗口长度必须对应同一批中心位点。
-2. train / valid / test 划分必须完全一致。
-3. 不要让窗口长度变化引入新的样本过滤偏差。
-4. 如果某些长窗口越界，可以统一丢弃这些中心位点，或用 `N` padding，但所有窗口长度要使用同一处理规则。
-
-推荐输出：
-
-```text
-data/processed/splice_sites_pm50.csv
-data/processed/splice_sites_pm100.csv
-data/processed/splice_sites_pm200.csv
-data/processed/splice_sites_pm400.csv
-```
-
-### 5.4 模型训练
-
-对每个窗口长度，重复训练相同模型：
-
-```text
-CNN baseline
-RNABERT + MLP
-RNA-FM + MLP
-SpliceAI
-```
-
-为了减少工作量，可以采用两阶段策略：
-
-1. 先跑 CNN 与 RNA-FM，确认消融曲线。
-2. 再补 RNABERT 与 SpliceAI。
-
-如果显存有限，长窗口下优先冻结基础模型，只训练 MLP head。
-
-### 5.5 推荐实验矩阵
-
-| Model | ±50 | ±100 | ±200 | ±400 | ±1000 |
-| --- | --- | --- | --- | --- | --- |
-| CNN | 必做 | 必做 | 必做 | 必做 | 可选 |
-| RNABERT + MLP | 必做 | 必做 | 必做 | 必做 | 可选 |
-| RNA-FM + MLP | 必做 | 必做 | 必做 | 必做 | 可选 |
-| SpliceAI | 可选 | 可选 | 必做 | 必做 | 可选 |
-
-### 5.6 评价指标
-
-重点关注：
-
-```text
-Macro-F1
-AUROC
-AUPRC
-Donor-F1
-Acceptor-F1
-```
-
-推荐画折线图：
-
-```text
-x-axis: window size
-y-axis: Macro-F1 / AUPRC
-line: different models
-```
-
-保存路径：
-
-```text
-results/tables/experiment_2_ablation.csv
-results/figures/exp2_window_size_macro_f1.png
-results/figures/exp2_window_size_auprc.png
-```
-
-### 5.7 可能结果与解释
-
-可能观察到：
-
-```text
-CNN 在 ±50 或 ±100 下已经能识别部分 motif，但长窗口提升有限。
-RNA-FM / RNABERT 在 ±200 或 ±400 下性能更好，说明其表示能利用更丰富上下文。
-SpliceAI 在较长窗口下表现最好，说明剪接任务专用模型对长程依赖建模更充分。
-```
-
-如果长窗口没有提升，也可以解释：
-
-> 本项目的三分类任务仍以局部剪接 motif 为主，长程上下文优势可能需要在更复杂的 junction-level 或 variant-level 任务中才能充分体现。
-
-这不会导致实验失败，反而可以自然引出实验三。
-
----
-
-## 6. 实验三：异常剪接变异效应预测实验
+实验二是本项目升级后的重点。它不再只是普通“窗口长度消融”，而是从**局部 motif → 中程 exon/intron context → 长程 splice regulation → 组织特异性 splice usage**逐层分析模型能力。
 
 ### 6.1 实验目的
 
-从“识别已有剪接位点”扩展到“判断突变是否破坏剪接信号”。
+回答：
 
-需要回答：
+> 剪接位点识别究竟主要依赖局部 GT/AG motif，还是需要更长程的 intron/exon context、剪接增强子 / 沉默子、组织特异性调控和 splice junction topology？
 
-> RNA 基础模型能不能感知单碱基突变对 donor / acceptor 剪接信号的扰动？
+### 6.2 实验 2A：Multi-scale context ablation
 
-### 6.2 数据方案 A：人工构造突变
-
-如果课程时间有限，优先使用人工突变。它实现简单、标签清晰、可解释性强。
-
-人工构造三类变异：
+#### 输入长度设置
 
 ```text
-1. donor 损伤突变：
-   将真实 donor site 附近的 GT 改为 AT / GC / TT
+Local context      : ±50 nt    -> 101 nt
+Short-range context: ±100 nt   -> 201 nt
+Regional context   : ±200 nt   -> 401 nt
+Extended context   : ±400 nt   -> 801 nt
+Gene-fragment      : ±1000 nt  -> 2001 nt，可选
+Long-range context : 5 kb / 10 kb，可选，仅用于 SpliceAI / Pangolin / Borzoi / AlphaGenome
+```
 
-2. acceptor 损伤突变：
-   将真实 acceptor site 附近的 AG 改为 AA / AC / GG
+#### 模型分工
 
-3. cryptic splice gain 突变：
+| 模型 | 适合上下文长度 | 作用 |
+| --- | --- | --- |
+| CNN | ±50 到 ±400 | 局部 motif 和普通深度学习基线 |
+| RNA-FM | ±50 到 ±400，±1000 可选 | 检验 RNA foundation representation 的上下文利用能力 |
+| RNABERT | ±50 到 ±400 | RNA foundation model 对照 |
+| SpliceAI | ±200 到 10 kb | 剪接任务专用强基线 |
+| Pangolin | 5 kb / 10 kb 或官方推荐输入 | 多组织 splice site strength / variant effect 扩展 |
+| Borzoi / AlphaGenome | 长序列 case study | 长程 RNA-seq / splice junction / splice usage 分子后果预测 |
+
+#### 数据要求
+
+1. 不同窗口长度使用同一批中心位点。
+2. train / valid / test 划分完全一致。
+3. 长窗口越界时统一 padding 或统一过滤。
+4. 不同模型的报告中要注明最大输入长度和截断策略。
+
+#### 输出表
+
+```text
+results/tables/experiment_2A_multiscale_context.csv
+```
+
+| Model | ±50 | ±100 | ±200 | ±400 | ±1000 | 5kb/10kb |
+| --- | --- | --- | --- | --- | --- | --- |
+| CNN Macro-F1 |  |  |  |  |  | - |
+| RNABERT Macro-F1 |  |  |  |  |  | - |
+| RNA-FM Macro-F1 |  |  |  |  |  | - |
+| SpliceAI Macro-F1 |  |  |  |  |  |  |
+| Pangolin score | - | - | - | - |  |  |
+
+#### 图表
+
+```text
+results/figures/exp2A_context_macro_f1.png
+results/figures/exp2A_context_auprc.png
+```
+
+### 6.3 实验 2B：GT/AG hard negative benchmark
+
+#### 设计动机
+
+很多非剪接位置也包含 GT 或 AG motif。若负样本是普通随机序列，模型可能只需要识别 GT/AG 即可取得高分，无法证明其学到了真正的剪接上下文。
+
+#### 测试集设计
+
+| 测试集 | 负样本构造 | 难度 | 目的 |
+| --- | --- | --- | --- |
+| Test-Easy | 随机非剪接位置 | 低 | sanity check |
+| Test-Hard-GT/AG | 含 GT/AG 但非注释剪接位点 | 高 | 检验上下文建模能力 |
+| Test-Cross-Gene | 测试基因不出现在训练集 | 高 | 检验跨基因泛化能力 |
+| Test-Rare-Motif | GC-AG 等少见剪接信号，可选 | 很高 | 检验模型是否过度依赖 canonical GT-AG |
+
+#### 评价方式
+
+对每个模型分别在多个测试集上报告：
+
+```text
+Macro-F1
+AUPRC
+Donor-F1
+Acceptor-F1
+Hard-negative false positive rate
+```
+
+Hard-negative false positive rate 定义为：
+
+```text
+含 GT/AG 的非剪接负样本中，被模型误判为 donor 或 acceptor 的比例
+```
+
+#### 输出表
+
+```text
+results/tables/experiment_2B_hard_negative.csv
+```
+
+| Model | Test-Easy Macro-F1 | Test-Hard Macro-F1 | Cross-Gene Macro-F1 | Hard-Neg FPR |
+| --- | --- | --- | --- | --- |
+| CNN |  |  |  |  |
+| RNABERT + MLP |  |  |  |  |
+| RNA-FM + MLP |  |  |  |  |
+| SpliceAI |  |  |  |  |
+| Pangolin |  |  |  |  |
+
+### 6.4 实验 2C：组织特异性 splice usage case study
+
+这是实验二的前沿扩展，不要求全量跑，但建议至少设计并完成小规模 case study。
+
+#### 实验问题
+
+> 同一个剪接位点或 splice junction 在不同组织中使用强度是否不同？长程调控模型是否能给出组织特异性预测？
+
+#### 候选模型
+
+```text
+Pangolin
+Borzoi
+AlphaGenome
+```
+
+#### 候选组织
+
+```text
+brain
+heart
+liver
+muscle
+blood
+```
+
+#### 输入输出
+
+输入：
+
+```text
+包含目标 exon-intron 结构的 genomic sequence，长度可为 10 kb 或模型推荐长度
+```
+
+输出：
+
+```text
+predicted splice site strength
+predicted splice junction usage
+predicted RNA-seq coverage
+predicted tissue-specific Δusage
+```
+
+#### 结果展示
+
+```text
+results/figures/exp2C_tissue_splice_usage_heatmap.png
+results/figures/exp2C_junction_usage_case_study.png
+```
+
+即使只做 3-5 个已知 alternative splicing event，也能作为“高级扩展实验”展示项目深度。
+
+### 6.5 实验二预期解释
+
+可能出现以下结果：
+
+1. CNN 在 easy negative 上表现很好，但在 hard negative 上掉分明显，说明它主要依赖局部 motif。
+2. RNA-FM / RNABERT 在 hard negative 上比 CNN 稳定，说明 foundation representation 学到了一定上下文规律。
+3. SpliceAI / Pangolin 在 hard negative 和长窗口上表现更强，说明任务专用监督信号和长程上下文仍然重要。
+4. Borzoi / AlphaGenome 的优势不一定体现在三分类 accuracy，而更体现在 splice junction、RNA-seq coverage 和组织特异性分子后果解释上。
+
+---
+
+## 7. 实验三：异常剪接变异效应预测
+
+实验三将任务从“识别剪接位点”升级为“预测变异是否扰动剪接”。这是项目最能体现前沿性的部分。
+
+### 7.1 实验目的
+
+回答：
+
+> 给定一个 SNV，模型能否预测它是否造成 donor loss、acceptor loss、donor gain 或 acceptor gain，并进一步对疾病相关 splice-altering variant 做优先级排序？
+
+### 7.2 模型分组
+
+| 类型 | 模型 | 作用 |
+| --- | --- | --- |
+| Foundation model zero-shot | RNA-FM、RNABERT、Nucleotide Transformer，可选 | 不重新训练或少量训练，考察预训练表示对变异扰动的敏感性 |
+| 任务专用监督模型 | SpliceAI、Pangolin、MMSplice | 强基线，直接预测 splice variant effect |
+| 传统统计模型 | MaxEntScan | 传统 splice site strength 基线 |
+| 长程调控模型 | Borzoi、AlphaGenome | 预测 RNA-seq、splice junction、splice usage 等分子后果 |
+
+### 7.3 数据方案 A：人工饱和突变
+
+这是最建议完成的版本，标签清晰，可解释性强。
+
+#### 构造方式
+
+围绕真实 donor / acceptor 位点进行 saturation mutagenesis：
+
+```text
+对中心 ±20 nt 或 ±50 nt 的每个位置，分别替换为另外 3 种碱基。
+```
+
+同时构造三类重点变异：
+
+```text
+1. donor loss:
+   将真实 donor 附近 GT 改为 AT / GC / TT
+
+2. acceptor loss:
+   将真实 acceptor 附近 AG 改为 AA / AC / GG
+
+3. cryptic splice gain:
    在非剪接区域人为制造新的 GT / AG motif
 ```
 
-标签定义：
-
-| 标签 | 含义 |
-| --- | --- |
-| `1` | splice-altering variant，预期影响剪接 |
-| `0` | neutral variant，预期不明显影响剪接 |
-
-neutral variant 可以从远离剪接位点的位置随机替换同类碱基构造，例如不改变 GT / AG motif 的普通单碱基突变。
-
-推荐输出：
+#### 输出字段
 
 ```text
-variant_id,chrom,pos,strand,ref,alt,variant_type,label,wt_sequence,mut_sequence,target_class
+variant_id,chrom,pos,strand,ref,alt,variant_type,label,wt_sequence,mut_sequence,target_class,gene_id,transcript_id
 ```
 
-其中 `target_class` 可以记录该变异主要影响 donor 还是 acceptor。
+### 7.4 数据方案 B：ClinVar 剪接相关变异
 
-### 6.3 数据方案 B：真实 ClinVar 变异
+作为真实变异 benchmark 或扩展实验。
 
-如果时间充足，可以使用 ClinVar 中带 splicing consequence 或相关 clinical significance 的变异。
+#### 阳性样本
 
-基本步骤：
-
-1. 读取 `clinvar.vcf`。
-2. 筛选注释中包含 splice donor、splice acceptor、splice region、splice-altering 等关键词的变异作为阳性。
-3. 从同基因或同区域中选取未标注剪接影响的变异作为阴性。
-4. 对每个变异提取 wild-type 序列窗口。
-5. 将中心位置替换为 alt allele，得到 mutant 序列窗口。
-6. 使用实验一训练好的模型分别预测 WT 与 Mut。
-
-真实数据标签更复杂，可能存在噪声。因此课程项目建议将真实 ClinVar 作为扩展分析，而不是唯一主实验。
-
-### 6.4 模型打分方式
-
-对 RNA-FM / RNABERT / CNN：
+ClinVar 中包含以下 consequence 或关键词的变异：
 
 ```text
-WT sequence  -> classifier -> score_wt
-Mut sequence -> classifier -> score_mut
-Delta score = score_mut - score_wt
+splice donor variant
+splice acceptor variant
+splice region variant
+splice-altering
+pathogenic / likely pathogenic with splicing evidence
 ```
 
-对 donor 损伤突变，可以定义：
+#### 阴性样本
 
 ```text
-delta_donor = P_mut(donor) - P_wt(donor)
+benign / likely benign variants
+matched by chromosome / gene / distance to splice site / allele frequency if available
 ```
 
-如果 `delta_donor` 显著为负，说明模型认为突变降低 donor 信号。
-
-对 acceptor 损伤突变：
+#### 任务
 
 ```text
-delta_acceptor = P_mut(acceptor) - P_wt(acceptor)
+positive: splice-altering variant
+negative: likely neutral variant
 ```
 
-对 cryptic splice gain 突变：
+### 7.5 数据方案 C：GTEx sQTL / tissue-specific splicing 扩展
+
+该部分适合作为更高阶 case study。
+
+任务：
 
 ```text
-delta_splice = max(P_mut(donor), P_mut(acceptor)) - max(P_wt(donor), P_wt(acceptor))
+区分 sQTL variant 与 matched control variant，并分析其组织特异性 splice junction usage 变化。
 ```
 
-如果 `delta_splice` 显著为正，说明模型认为突变制造了新的剪接信号。
-
-对 SpliceAI：
+输出：
 
 ```text
-直接使用 SpliceAI 输出的 variant effect score
+variant_id, tissue, target_gene, target_junction, observed_effect_direction, model_delta_score
 ```
 
-或者使用 donor gain、donor loss、acceptor gain、acceptor loss 四类分数中的最大值作为总体变异效应分数。
+### 7.6 打分方式
 
-### 6.5 评价指标
+#### 7.6.1 Supervised classifier delta score
 
-推荐报告：
+对实验一训练好的 CNN / RNA-FM / RNABERT 分类器：
+
+```text
+WT sequence  -> classifier -> P_wt(donor), P_wt(acceptor), P_wt(non_splice)
+Mut sequence -> classifier -> P_mut(donor), P_mut(acceptor), P_mut(non_splice)
+```
+
+Donor loss：
+
+```text
+delta_donor_loss = P_wt(donor) - P_mut(donor)
+```
+
+Acceptor loss：
+
+```text
+delta_acceptor_loss = P_wt(acceptor) - P_mut(acceptor)
+```
+
+Cryptic gain：
+
+```text
+delta_splice_gain = max(P_mut(donor), P_mut(acceptor)) - max(P_wt(donor), P_wt(acceptor))
+```
+
+#### 7.6.2 Foundation model zero-shot scoring
+
+不使用任务标签，直接用预训练模型衡量 WT 与 Mut 的表示差异。
+
+可选分数：
+
+```text
+Delta embedding distance:
+score = || embedding_wt - embedding_mut ||_2
+
+Delta cosine distance:
+score = 1 - cos(embedding_wt, embedding_mut)
+
+Delta pseudo-likelihood:
+score = PLL(mutant sequence) - PLL(wild-type sequence)
+```
+
+其中 Delta pseudo-likelihood 更适合 masked language model。若实现困难，可以优先使用 embedding distance。
+
+#### 7.6.3 SpliceAI / Pangolin / MMSplice / MaxEntScan score
+
+SpliceAI：
+
+```text
+score = max(DS_AG, DS_AL, DS_DG, DS_DL)
+```
+
+其中：
+
+```text
+DS_AG: acceptor gain
+DS_AL: acceptor loss
+DS_DG: donor gain
+DS_DL: donor loss
+```
+
+Pangolin：
+
+```text
+score = max tissue-specific splice effect score
+```
+
+MMSplice：
+
+```text
+score = predicted ΔlogitPSI 或 splice impact score
+```
+
+MaxEntScan：
+
+```text
+score = splice_site_strength_wt - splice_site_strength_mut
+```
+
+#### 7.6.4 Borzoi / AlphaGenome molecular consequence score
+
+用于 case study：
+
+```text
+WT sequence  -> predicted RNA-seq / splice junction / splice site usage
+Mut sequence -> predicted RNA-seq / splice junction / splice site usage
+Delta prediction -> molecular consequence
+```
+
+展示重点不只是“是否有害”，而是：
+
+```text
+影响哪个 junction？
+影响哪个 tissue？
+影响 RNA-seq coverage 还是 splice site usage？
+是否伴随 gene expression 改变？
+```
+
+### 7.7 评价指标
 
 ```text
 AUROC
 AUPRC
 Top-k recall
+Enrichment@K
 Delta score distribution
+Calibration curve，可选
 ```
 
-Top-k recall 的含义是：按照模型预测的变异影响分数从高到低排序，前 k 个变异中覆盖了多少真实 splice-altering variant。
+Top-k recall：按照模型预测变异影响分数排序，前 k 个变异中覆盖多少真实 splice-altering variant。
 
-推荐保存：
+Enrichment@K：前 k 个高分变异中阳性比例相对于随机抽样的富集倍数。
+
+### 7.8 推荐输出
 
 ```text
-results/tables/experiment_3_variant_metrics.csv
+results/tables/experiment_3A_artificial_variant_metrics.csv
+results/tables/experiment_3B_clinvar_variant_metrics.csv
+results/tables/experiment_3C_sqtl_case_study.csv
 results/figures/exp3_delta_score_boxplot.png
 results/figures/exp3_variant_auroc.png
 results/figures/exp3_variant_auprc.png
+results/figures/exp3_saturation_mutagenesis_heatmap.png
+results/figures/exp3_alphagenome_junction_case_study.png
 ```
 
-### 6.6 推荐分析
+### 7.9 实验三预期解释
 
-重点比较：
+可能结论：
 
-1. 人工 donor GT 破坏后，模型 donor score 是否下降。
-2. 人工 acceptor AG 破坏后，模型 acceptor score 是否下降。
-3. 非剪接区域制造 GT / AG 后，模型是否出现 donor / acceptor gain。
-4. RNA-FM / RNABERT 的 delta score 是否比 CNN 更稳定。
-5. SpliceAI 是否在变异效应预测上明显更强。
-
-### 6.7 论文中如何解释
-
-如果 RNA-FM / RNABERT 能正确响应人工突变：
-
-> 说明 RNA 基础模型不仅能识别静态剪接位点，还能对关键 motif 的单碱基扰动产生合理响应。
-
-如果它们弱于 SpliceAI：
-
-> 说明基础模型的通用表示虽然包含剪接信号，但要用于疾病相关变异解释，仍需要更长上下文建模和剪接监督微调。
+1. RNA-FM / RNABERT zero-shot embedding distance 对关键 splice motif 突变有一定响应，但不一定能准确区分所有真实 ClinVar splicing variants。
+2. SpliceAI / Pangolin 在真实 splice-altering variant benchmark 上更稳定，说明任务监督和长程上下文仍然关键。
+3. MaxEntScan 在 canonical splice site 附近可能有效，但对 cryptic gain、深内含子变异、组织特异性剪接解释能力有限。
+4. Borzoi / AlphaGenome 的优势在于提供分子后果层面的解释，例如 splice junction usage、RNA-seq coverage 和 tissue-specific effect。
 
 ---
 
-## 7. 可解释性分析
+## 8. 可解释性分析
 
-可解释性分析可以作为实验一或实验三的补充，不一定单独作为主实验。
-
-### 7.1 Attention 可视化
+### 8.1 Attention 可视化
 
 适用于 RNA-FM / RNABERT。
 
 步骤：
 
-1. 选择若干 donor、acceptor、non-splice 测试样本。
+1. 选择预测正确且置信度高的 donor、acceptor、hard negative 样本。
 2. 提取最后几层 attention map。
-3. 对 attention head 求平均，得到每个位置的重要性。
-4. 将中心剪接位点附近 ±50 nt 的 attention 画成热图。
+3. 对 attention head 求平均。
+4. 绘制中心 ±50 nt 的 attention heatmap。
 
 重点观察：
 
@@ -639,57 +777,61 @@ results/figures/exp3_variant_auprc.png
 donor site: 中心 GT 附近是否高亮
 acceptor site: 中心 AG 附近是否高亮
 acceptor 上游 polypyrimidine tract 是否有响应
+hard negative: 模型是否能抑制非功能性 GT/AG motif
 ```
 
-输出图：
+### 8.2 In silico mutagenesis
 
-```text
-results/figures/interpret_attention_donor.png
-results/figures/interpret_attention_acceptor.png
-```
-
-### 7.2 In silico mutagenesis
-
-更推荐使用该方法，因为它更直观。
+更推荐，因为它直观、可解释。
 
 步骤：
 
-1. 选择一个模型预测正确且置信度高的 donor 或 acceptor 样本。
+1. 选择一个 donor 或 acceptor 样本。
 2. 对序列每个位置依次突变为 A / C / G / T。
-3. 每次突变后重新预测。
-4. 记录目标类别概率变化。
-5. 画出位置 × 碱基的 importance heatmap。
+3. 重新预测目标类别概率。
+4. 记录概率下降幅度。
+5. 绘制位置 × 碱基的 heatmap。
 
-对于 donor 样本：
+Donor importance：
 
 ```text
 importance = P_original(donor) - P_mutated(donor)
 ```
 
-对于 acceptor 样本：
+Acceptor importance：
 
 ```text
 importance = P_original(acceptor) - P_mutated(acceptor)
 ```
 
-如果 GT / AG 附近突变造成最大分数下降，就能说明模型学到了合理的剪接信号。
-
-输出图：
+输出：
 
 ```text
 results/figures/ism_donor_heatmap.png
 results/figures/ism_acceptor_heatmap.png
+results/figures/ism_hard_negative_heatmap.png
 ```
+
+### 8.3 Variant delta profile
+
+对一个 ClinVar 或人工变异 case，画出 WT 与 Mut 在中心附近每个位置的 donor / acceptor score 曲线。
+
+输出：
+
+```text
+results/figures/variant_delta_profile_donor_loss.png
+results/figures/variant_delta_profile_cryptic_gain.png
+```
+
+该图能展示变异是否导致原有 splice site score 下降，或在新位置产生 cryptic splice site peak。
 
 ---
 
-## 8. 推荐运行顺序
+## 9. 推荐运行顺序
 
-建议按下面顺序推进，避免一开始就陷入复杂模型调试。
+### Step 1：构建剪接位点数据集
 
-### 第一步：完成数据集
-
-目标产物：
+产物：
 
 ```text
 data/processed/splice_sites_pm200.csv
@@ -698,92 +840,112 @@ data/splits/valid.csv
 data/splits/test.csv
 ```
 
-检查点：
+检查：
 
 ```text
 三类样本数量是否接近均衡
 序列长度是否全部为 401
-是否正确处理正负链
-是否没有 train/test 基因泄漏
+正负链是否正确
+负样本是否包含 hard negative GT/AG
+是否避免 train/test gene leakage
 ```
 
-### 第二步：跑 CNN baseline
+### Step 2：跑 CNN baseline
 
-目标产物：
+产物：
 
 ```text
 results/tables/cnn_pm200_metrics.csv
 results/figures/cnn_pm200_confusion_matrix.png
 ```
 
-CNN baseline 是整个项目的 sanity check。如果 CNN 都无法学习，优先检查标签、序列方向和数据构造。
+CNN 是 sanity check。若 CNN 无法学习，优先检查数据标签、序列方向和中心位点定义。
 
-### 第三步：跑 RNA-FM + MLP
+### Step 3：跑 RNA-FM + MLP
 
-目标产物：
+产物：
 
 ```text
 results/tables/rnafm_pm200_metrics.csv
 results/checkpoints/rnafm_mlp_best.pt
 ```
 
-先冻结 RNA-FM，只训练 MLP。确认流程跑通后，再考虑是否微调最后几层。
+### Step 4：跑 RNABERT + MLP
 
-### 第四步：跑 RNABERT + MLP
-
-目标产物：
+产物：
 
 ```text
 results/tables/rnabert_pm200_metrics.csv
 results/checkpoints/rnabert_mlp_best.pt
 ```
 
-保持与 RNA-FM 完全相同的数据和评价流程。
+### Step 5：补 SpliceAI baseline
 
-### 第五步：补 SpliceAI baseline
-
-目标产物：
+产物：
 
 ```text
 results/tables/spliceai_pm200_metrics.csv
 ```
 
-如果安装或运行 SpliceAI 困难，可以在论文中将 SpliceAI 作为文献强基线，并说明本项目主要完成 RNA-FM、RNABERT 与 CNN 的实证比较。
+### Step 6：实验二 Multi-scale context + hard negative
 
-### 第六步：做上下文长度消融
-
-目标产物：
+产物：
 
 ```text
-results/tables/experiment_2_ablation.csv
-results/figures/exp2_window_size_macro_f1.png
+results/tables/experiment_2A_multiscale_context.csv
+results/tables/experiment_2B_hard_negative.csv
+results/figures/exp2A_context_macro_f1.png
+results/figures/exp2B_hard_negative_fpr.png
 ```
 
-优先跑 `±50 / ±100 / ±200 / ±400`。
+### Step 7：实验三 variant effect prediction
 
-### 第七步：做变异效应预测
+优先做人工饱和突变，再做 ClinVar 扩展。
 
-目标产物：
+产物：
 
 ```text
-data/processed/variant_effect.csv
-results/tables/experiment_3_variant_metrics.csv
+data/processed/artificial_variant_effect.csv
+results/tables/experiment_3A_artificial_variant_metrics.csv
 results/figures/exp3_delta_score_boxplot.png
+results/figures/exp3_saturation_mutagenesis_heatmap.png
 ```
 
-优先使用人工构造突变，确保结论清晰。
+### Step 8：可解释性分析
+
+产物：
+
+```text
+results/figures/ism_donor_heatmap.png
+results/figures/ism_acceptor_heatmap.png
+results/figures/variant_delta_profile_cryptic_gain.png
+```
+
+### Step 9：前沿 case study，可选
+
+选择 1-3 个 case，用 Pangolin / Borzoi / AlphaGenome 展示组织特异性或长程分子后果预测。
+
+产物：
+
+```text
+reports/alphagenome_borzoi_case_study.md
+results/figures/exp2C_tissue_splice_usage_heatmap.png
+results/figures/exp3_alphagenome_junction_case_study.png
+```
 
 ---
 
-## 9. 实验记录模板
+## 10. 实验记录模板
 
-每次训练建议记录以下信息：
+每次训练建议记录：
 
 ```text
 experiment_id:
 date:
 model:
+task:
 window_size:
+negative_type:
 dataset_version:
 train_samples:
 valid_samples:
@@ -791,6 +953,7 @@ test_samples:
 learning_rate:
 batch_size:
 epochs:
+freeze_encoder:
 best_valid_macro_f1:
 test_accuracy:
 test_macro_f1:
@@ -799,68 +962,92 @@ test_auprc:
 notes:
 ```
 
-可以把每次实验写入 `reports/experiment_log.md`，避免后期整理结果时找不到配置。
-
 ---
 
-## 10. 最终论文 / 汇报建议
-
-### 10.1 论文结构
-
-推荐结构：
+## 11. 最终论文 / 汇报结构建议
 
 ```text
 1. 引言
-   介绍 RNA 剪接、剪接变异、RNA foundation model、SpliceAI。
+   RNA 剪接、异常剪接变异、RNA foundation model、AI for Science 背景。
 
 2. 研究问题
-   RNA foundation model 是否学到了可迁移的剪接信号？
+   通用 RNA foundation model 是否真正学到了可迁移剪接语法？
+   任务专用剪接模型和长程基因组调控模型分别解决什么问题？
 
-3. 方法
-   数据构造、模型、训练设置、评价指标。
+3. 数据与方法
+   GENCODE 剪接位点构造、hard negative、ClinVar / 人工突变、模型设置、评价指标。
 
 4. 实验一：剪接位点三分类
-   展示模型总体性能与混淆矩阵。
+   模型总体性能、混淆矩阵、donor / acceptor / non-splice 区分能力。
 
-5. 实验二：上下文长度消融
-   展示窗口长度与性能关系。
+5. 实验二：多尺度上下文与 hard negative
+   Multi-scale context ablation、GT/AG hard negative、cross-gene generalization、组织特异性 case study。
 
 6. 实验三：异常剪接变异效应预测
-   展示 WT/Mut delta score 与变异识别指标。
+   Artificial saturation mutagenesis、zero-shot variant scoring、ClinVar benchmark、SpliceAI / Pangolin 对照。
 
 7. 可解释性分析
-   展示 attention 或 in silico mutagenesis。
+   Attention、in silico mutagenesis、variant delta profile。
 
 8. 讨论
-   分析 RNA-FM / RNABERT 与 SpliceAI 差距。
+   RNA-FM / RNABERT 的迁移潜力，SpliceAI / Pangolin 的优势，Borzoi / AlphaGenome 的分子后果解释价值。
 
 9. 结论
-   总结基础模型的迁移潜力与局限。
+   总结多尺度 RNA 剪接建模的能力边界和后续改进方向。
 ```
 
-### 10.2 建议核心结论
+---
 
-可以围绕下面这类结论组织：
-
-> RNA-FM 和 RNABERT 等 RNA 基础模型能够通过预训练表示捕捉一定的剪接信号，在剪接位点识别任务上优于普通 CNN baseline；但在异常剪接变异效应预测上，任务专用模型 SpliceAI 仍然更稳定。说明 RNA foundation model 具备转录组学任务迁移潜力，但要真正用于疾病相关剪接变异解释，还需要引入更长程上下文、剪接位点竞争机制和监督微调。
-
-### 10.3 建议展示图表
-
-最终汇报中至少准备：
+## 12. 建议展示图表
 
 ```text
 图 1：项目整体实验流程图
 图 2：剪接位点三分类任务示意图
-图 3：不同模型在实验一上的性能柱状图
-图 4：混淆矩阵，展示 donor / acceptor / non-splice 混淆情况
-图 5：上下文长度消融折线图
-图 6：突变前后 delta score 箱线图
-图 7：in silico mutagenesis heatmap
+图 3：RNA foundation model、SpliceAI、长程调控模型的层次对比图
+图 4：实验一模型性能柱状图
+图 5：donor / acceptor / non-splice 混淆矩阵
+图 6：Multi-scale context ablation 折线图
+图 7：GT/AG hard negative false positive rate 对比图
+图 8：人工饱和突变 heatmap
+图 9：WT vs Mut delta score 箱线图
+图 10：ClinVar variant prioritization AUROC / AUPRC
+图 11：tissue-specific splice usage case study heatmap
+图 12：in silico mutagenesis 可解释性热图
 ```
 
 ---
 
+## 13. 最小可交付版本与高级版本
+
+### 13.1 最小可交付版本
+
+```text
+模型：CNN、RNA-FM、RNABERT、SpliceAI
+实验：
+1. 剪接位点三分类
+2. ±50 / ±100 / ±200 / ±400 多尺度上下文消融
+3. GT/AG hard negative 测试
+4. 人工 donor loss / acceptor loss / cryptic gain 变异效应预测
+5. in silico mutagenesis 可解释性
+```
+
+### 13.2 高级展示版本
+
+```text
+额外模型：Pangolin、MMSplice、MaxEntScan、Borzoi / AlphaGenome case study
+额外实验：
+1. ClinVar splice-altering variant prioritization
+2. GTEx sQTL / tissue-specific splicing case study
+3. Borzoi / AlphaGenome 的 splice junction / RNA-seq coverage 分子后果预测
+4. RNA-FM / RNABERT zero-shot pseudo-likelihood variant scoring
+```
+
+建议实际推进时先完成最小版本，再把高级版本作为论文扩展和汇报亮点。
+
 ---
 
+## 14. 建议核心结论模板
 
+最终论文可以围绕下面这种结论组织：
 
+> 本项目表明，RNA-FM 和 RNABERT 等 RNA foundation model 能够通过预训练表示捕捉一定的剪接相关序列语法，在剪接位点三分类和 hard negative 测试中相比普通 CNN 具有更好的泛化潜力。然而，在异常剪接变异效应预测中，SpliceAI、Pangolin 等任务专用模型仍然更加稳定，说明长程上下文、剪接监督信号和组织特异性建模对于疾病相关变异解释至关重要。Borzoi、AlphaGenome 等长程基因组调控模型的价值不只在于提高分类分数，而在于进一步提供 splice junction、RNA-seq coverage 和 tissue-specific splice usage 等分子后果解释。整体来看，RNA foundation model 是转录组学任务的重要通用表征基础，但要走向可靠的剪接变异解释，还需要与任务监督、长程调控建模和可解释性分析结合。
