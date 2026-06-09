@@ -1,0 +1,10 @@
+model,split,true_label,true_label_name,pred_label,pred_label_name,count
+RNA-FM frozen encoder + MLP,test,0,donor,0,donor,267
+RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,3
+RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,30
+RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,2
+RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,236
+RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,62
+RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,34
+RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,56
+RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,210

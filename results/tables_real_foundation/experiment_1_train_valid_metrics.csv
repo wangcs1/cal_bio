@@ -1,0 +1,2 @@
+model_key,model,split,train_rows,valid_rows,fit_seconds,checkpoint,accuracy,macro_precision,macro_recall,macro_f1,auroc,auprc,donor_f1,acceptor_f1,non_splice_f1
+rnafm,RNA-FM frozen encoder + MLP,valid,3000,900,848.8886864185333,results/checkpoints/real_foundation/rnafm.joblib,0.7966666666666666,0.794054458717603,0.7966666666666667,0.7949772670445645,0.9291944444444443,0.8604207457115138,0.8697068403908795,0.8245033112582781,0.6907216494845361

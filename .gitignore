@@ -1,7 +1,12 @@
 data/raw/
+splits/
+models/hf/
+results/embeddings/
+results/checkpoints/
+auth.json
+c669f101a9336b7831108dcb442c0c18.jpg
 
 __pycache__/
 *.pyc
 .vscode/
-results/checkpoints/*.pkl
 PERSONAL_UNDERSTANDING_NOTES.md
