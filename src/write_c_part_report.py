@@ -15,6 +15,8 @@ def markdown_table(frame: pd.DataFrame, columns: list[str], max_rows: int = 12) 
     for col in subset.columns:
         if pd.api.types.is_float_dtype(subset[col]):
             subset[col] = subset[col].map(lambda x: "" if pd.isna(x) else f"{x:.4f}")
+        else:
+            subset[col] = subset[col].map(lambda x: "" if pd.isna(x) else str(x).replace("|", r"\|"))
     header = "| " + " | ".join(map(str, subset.columns)) + " |"
     sep = "| " + " | ".join(["---"] * len(subset.columns)) + " |"
     rows = []
@@ -34,30 +36,39 @@ def write_report(root: Path = PROJECT_ROOT) -> Path:
     exp2b = load_or_empty(tables / "experiment_2B_hard_negative.csv")
     exp3 = load_or_empty(tables / "experiment_3A_artificial_variant_metrics.csv")
     tissue = load_or_empty(tables / "experiment_2C_tissue_splice_usage_case_study.csv")
+    real_smoke = root / "results/real_smoke"
+    foundation_smoke = load_or_empty(real_smoke / "foundation_model_smoke.csv")
+    maxent_mmsplice_smoke = load_or_empty(real_smoke / "maxentscan_mmsplice_smoke.csv")
+    spliceai_smoke = load_or_empty(real_smoke / "spliceai_clinvar_smoke_summary.csv")
 
     best_exp2 = exp2a.sort_values(["window_flank", "macro_f1"], ascending=[True, False])
     best_exp3 = exp3.sort_values("auprc", ascending=False)
 
     real_resource_section = """## 0. 真实资源补充状态（2026-06-09 更新）
 
-上一版 C Part 是在缺少 raw 数据和真实模型权重的条件下完成的 synthetic benchmark。根据后续要求，已经继续补充真实资源：
+当前版本已经在 WSL2 / Ubuntu-22.04 环境下补齐并验证 C Part 所需真实资源和真实模型依赖：
 
 - `data/raw/genome.fa`：已下载并解压，GENCODE v49 / GRCh38 primary assembly genome FASTA。
 - `data/raw/gencode.gtf`：已下载并解压，GENCODE v49 primary assembly annotation GTF。
 - `data/raw/clinvar.vcf`：已下载并解压，使用 NCBI ClinVar GRCh38 archive_2.0 `clinvar_20260530.vcf.gz`，共 4,434,969 条变异记录。
 - `data/raw/gtex_sqtl.tsv` 与 `data/raw/known_splice_events.tsv`：已通过 GTEx Portal API 拉取小型真实 case study。
 - `data/raw/gencode.db`：已由 `gencode.gtf` 构建，用于真实 Pangolin 运行。
-- RNA-FM 与 RNABERT：已安装 `multimolecule`，并成功下载/加载 `multimolecule/rnafm` 和 `multimolecule/rnabert` 预训练权重。
+- RNA-FM 与 RNABERT：已安装 `multimolecule`，并成功下载/加载 `multimolecule/rnafm` 和 `multimolecule/rnabert` 预训练权重；已在 GPU 上完成前向验证。
+- SpliceAI：已在 WSL Python 3.10 环境安装 `spliceai + tensorflow + pysam`，并对真实 ClinVar smoke VCF 输出结果。
 - Pangolin：已安装 GitHub `tkzeng/Pangolin`，命令行可用，并已用真实 `genome.fa + gencode.db + ClinVar smoke CSV` 跑通 GPU smoke test。
+- MMSplice：已安装 `mmsplice + kipoi + cyvcf2`，并修正为 `numpy==1.26.4` 以解决 ABI 兼容；已加载 H5 权重并完成 CPU smoke 预测。
+- MaxEntScan：已从 `kepbod/maxentpy` 源码安装 `maxentpy`，并完成 donor/acceptor 最小评分。
 - GPU：本机可用 `NVIDIA GeForce RTX 5070 Ti`。
 
-仍未完全完成的真实模型项：
+真实模型 smoke 输出：
 
-- SpliceAI：Windows + Python 3.12 下 `pysam` 构建失败。
-- MMSplice：Windows + Python 3.12 下 `cyvcf2` 构建失败。
-- MaxEntPy：当前 pip 源没有可用 `maxentpy` 包；代码中仍保留 MaxEntScan consensus proxy。
+- `results/real_smoke/spliceai_clinvar_smoke.vcf`
+- `results/real_smoke/spliceai_clinvar_smoke_summary.csv`
+- `results/real_smoke/pangolin_clinvar_smoke.csv`
+- `results/real_smoke/foundation_model_smoke.csv`
+- `results/real_smoke/maxentscan_mmsplice_smoke.csv`
 
-详细状态见 `REAL_RESOURCE_STATUS.md`。
+详细状态见 `REAL_RESOURCE_STATUS.md`，可重复执行脚本见 `scripts/run_real_model_smoke.py`。
 """
 
     text = f"""# C Part 执行细节说明
@@ -96,7 +107,11 @@ python -m src.write_c_part_report
 
 ## 2. 数据说明
 
-当前仓库没有 `data/raw/genome.fa`、`data/raw/gencode.gtf`、ClinVar VCF 或 GTEx sQTL 文件，因此本次没有声称使用真实人类基因组注释数据。为了满足 C Part “全量构建并运行出结果”的要求，代码制造了一个可复现的 synthetic splice benchmark：
+本仓库当前包含两类数据资产。
+
+第一类是真实资源，位于 `data/raw/`。其中 `genome.fa`、`gencode.gtf`、`clinvar.vcf`、`gtex_sqtl.tsv`、`known_splice_events.tsv` 和 `gencode.db` 已经用于真实模型 smoke test 与 case-study 支撑；由于原始 genome/annotation/ClinVar 文件体积过大，仍通过 `.gitignore` 排除，不随代码仓库提交。
+
+第二类是可提交、可复现的实验数据，位于 `data/processed/` 与 `data/splits/`。为了保证 C Part 主实验能够在没有外部大文件的机器上完整复现，代码同时制造了一个 synthetic splice benchmark：
 
 - donor 样本：中心附近植入 canonical `GT` donor motif，并加入 `CAGGTAAGT`、下游 `GTA` 相关上下文。
 - acceptor 样本：中心上游植入 canonical `AG` acceptor motif、polypyrimidine tract 和 branch-point-like `TACTAAC`。
@@ -123,7 +138,7 @@ python -m src.write_c_part_report
 
 ## 3. 模型与训练说明
 
-由于当前环境没有 `transformers`，也没有本地 RNA-FM、RNABERT、SpliceAI、Pangolin、MMSplice、Borzoi 或 AlphaGenome 预训练权重，本次采用本地可运行代理模型完成同构实验流程。代理模型的目的不是冒充真实预训练模型，而是在无联网、无权重条件下复现 C Part 需要的实验逻辑、评价表格与解释性图件。
+当前 WSL 环境已经具备真实模型依赖与权重验证：RNA-FM、RNABERT、SpliceAI、Pangolin、MMSplice 和 MaxEntScan 均完成最小可执行 smoke test。考虑到完整 ClinVar/GTEx 规模训练和 foundation model fine-tuning 的运行成本较高，主实验表格仍保留可快速复现的同构 benchmark；真实模型 smoke 输出作为“环境与模型可运行性证明”和论文 case-study 支撑。
 
 本次训练/打分的模型如下：
 
@@ -138,7 +153,21 @@ python -m src.write_c_part_report
 真实模型替换方式：
 
 - 放入真实 `genome.fa/gencode.gtf` 后，可先用 `data/scripts/build_splice_sites.py` 构建真实位点数据，再用本次新增实验脚本读取同名 CSV。
-- 若安装并缓存 RNA-FM/RNABERT/SpliceAI/Pangolin 权重，可在 `src/models/` 下替换代理模型的 `predict_proba` 或 zero-shot embedding 逻辑，结果表路径无需改变。
+- 若将主实验从 synthetic benchmark 切换到真实全量数据，可在 `src/models/` 下替换代理模型的 `predict_proba` 或 zero-shot embedding 逻辑，结果表路径无需改变。
+
+真实模型 smoke 结果：
+
+RNA foundation model 前向验证：
+
+{markdown_table(foundation_smoke, ["model", "device", "input_tokens", "hidden_size", "embedding_mean", "embedding_std"], max_rows=10)}
+
+MaxEntScan 与 MMSplice 最小评分：
+
+{markdown_table(maxent_mmsplice_smoke, ["model", "input", "score_name", "score"], max_rows=10)}
+
+SpliceAI ClinVar smoke 摘要：
+
+{markdown_table(spliceai_smoke, ["chrom", "pos", "ref", "alt", "spliceai_info"], max_rows=10)}
 
 ## 4. 实验二结果
 

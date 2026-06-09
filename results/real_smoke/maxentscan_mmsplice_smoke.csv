@@ -1,0 +1,8 @@
+model,input,score_name,score
+MaxEntScan,CAGGTAAGT,score5_donor,10.858313101356437
+MaxEntScan,TTTTTTTTTTTTTTTTTTTTAGG,score3_acceptor,-6.234058765132626
+MMSplice,synthetic_splice_context_overhang_80_0,module_0,-2.9407379627227783
+MMSplice,synthetic_splice_context_overhang_80_1,module_1,-9.181321144104004
+MMSplice,synthetic_splice_context_overhang_80_2,module_2,-8.922183990478516
+MMSplice,synthetic_splice_context_overhang_80_3,module_3,-4.649222373962402
+MMSplice,synthetic_splice_context_overhang_80_4,module_4,0.4743679463863373

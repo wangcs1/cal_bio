@@ -21,6 +21,9 @@ PACKAGES = [
     "pyfaidx",
     "pangolin",
     "spliceai",
+    "tensorflow",
+    "keras",
+    "cyvcf2",
     "maxentpy",
     "mmsplice",
 ]

@@ -12,6 +12,31 @@
 
 ---
 
+## 当前 C Part 完成状态
+
+截至 2026-06-09，C Part 已在 WSL2 / Ubuntu-22.04 环境完成配置、运行和结果落盘：
+
+- 主实验链路已运行：`python -m src.run_c_part_all`。
+- 真实资源已补齐到本机 `data/raw/`：GENCODE v49 genome FASTA、GENCODE v49 GTF、ClinVar GRCh38 VCF、GTEx sQTL / splice event case-study 表、Pangolin gencode DB。
+- 真实模型 smoke test 已跑通：RNA-FM、RNABERT、SpliceAI、Pangolin、MMSplice、MaxEntScan。
+- 真实模型输出位于 `results/real_smoke/`，主实验表格位于 `results/tables/`，主实验图件位于 `results/figures/`。
+- 完整执行细节、数据来源、模型说明和结果表见 `C_PART_EXECUTION_DETAILS.md`；真实资源状态见 `REAL_RESOURCE_STATUS.md`。
+
+WSL 复现命令：
+
+```bash
+cd /mnt/d/CAL_BIO
+source /home/wcs/.venvs/cal_bio_cpart/bin/activate
+export HF_ENDPOINT=https://hf-mirror.com
+python scripts/check_real_resources.py
+python scripts/run_real_model_smoke.py
+python -m src.run_c_part_all
+```
+
+说明：`data/raw/` 下真实 genome/annotation/ClinVar 原始大文件体积很大，仍被 `.gitignore` 排除，不会推送到远端仓库；可提交的处理后数据、结果表、图件和 smoke 输出已保留在仓库内。
+
+---
+
 ## 0. 项目动机
 
 高通量测序技术已经能够快速获得大规模基因组和转录组数据，但如何从原始核酸序列中解释调控规则、功能后果和疾病机制，仍然是计算生物学中的核心问题。RNA 剪接是连接基因组序列和成熟转录本功能的关键步骤，它不仅依赖 donor site、acceptor site、branch point、polypyrimidine tract 等局部信号，也受到外显子 / 内含子剪接增强子、剪接沉默子、RNA-binding proteins、组织特异性调控和长程上下文共同影响。

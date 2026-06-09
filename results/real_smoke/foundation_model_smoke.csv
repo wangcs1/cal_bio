@@ -1,0 +1,3 @@
+model,device,input_tokens,hidden_size,embedding_mean,embedding_std
+multimolecule/rnafm,cuda,30,640,0.0032359918113797903,0.5185742974281311
+multimolecule/rnabert,cuda,30,120,-0.011431033723056316,0.10359182208776474
