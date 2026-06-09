@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .vscode/
 results/checkpoints/*.pkl
+PERSONAL_UNDERSTANDING_NOTES.md

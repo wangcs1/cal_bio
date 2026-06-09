@@ -1,0 +1,17 @@
+model,variant_type,mean_score,median_score,rows,positive_rate
+MaxEntScan consensus proxy,acceptor_loss,0.29,0.2899999999999999,90,1.0
+MaxEntScan consensus proxy,cryptic_gain,-0.004201683501683495,0.0,90,1.0
+MaxEntScan consensus proxy,donor_loss,0.281060606060606,0.281060606060606,90,1.0
+MaxEntScan consensus proxy,neutral_far_snv,0.0,0.0,180,0.0
+RNA-FM zero-shot embedding distance,acceptor_loss,1.0418273052283653,1.0416066637558696,90,1.0
+RNA-FM zero-shot embedding distance,cryptic_gain,0.03111643877137589,0.02051728745262485,90,1.0
+RNA-FM zero-shot embedding distance,donor_loss,1.0398681933103457,1.0398681933103462,90,1.0
+RNA-FM zero-shot embedding distance,neutral_far_snv,0.00992398251176203,0.0100314362994275,180,0.0
+RNABERT zero-shot token distance,acceptor_loss,1.7565357277155111,1.756404676137825,90,1.0
+RNABERT zero-shot token distance,cryptic_gain,0.2436822298784134,0.02083035375019,90,1.0
+RNABERT zero-shot token distance,donor_loss,1.7553742631805636,1.7553742631805642,90,1.0
+RNABERT zero-shot token distance,neutral_far_snv,0.010651552703669813,0.0106571146382957,180,0.0
+SpliceAI signal proxy,acceptor_loss,0.525721481867629,0.5261439788965905,90,1.0
+SpliceAI signal proxy,cryptic_gain,-0.001572687297411822,0.0,90,1.0
+SpliceAI signal proxy,donor_loss,0.6980908532616996,0.7092278720245814,90,1.0
+SpliceAI signal proxy,neutral_far_snv,0.000592252124216018,0.0,180,0.0

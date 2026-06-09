@@ -4,9 +4,9 @@ from src.build_synthetic_splice_dataset import build_and_write
 from src.build_variant_dataset import build_and_write_variants
 from src.run_exp2_multiscale import run as run_exp2
 from src.run_exp3_variant_effect import run as run_exp3
+from src.run_full_context_question import run as run_full_context
 from src.run_interpretability import run as run_interpretability
 from src.utils import PROJECT_ROOT
-from src.write_c_part_report import write_report
 
 
 def main() -> None:
@@ -22,11 +22,10 @@ def main() -> None:
     run_exp3(tables, figures, random_state=42)
     print("[5/6] Running interpretability analyses")
     run_interpretability(tables, figures, random_state=42)
-    print("[6/6] Writing execution report")
-    report = write_report(PROJECT_ROOT)
-    print(f"Done: {report}")
+    print("[6/6] Running full context question experiments")
+    run_full_context(tables, figures)
+    print("Done")
 
 
 if __name__ == "__main__":
     main()
-
