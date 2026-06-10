@@ -122,20 +122,28 @@ def plot_delta_profile(variant: pd.Series, out_path: Path, title: str) -> pd.Dat
 def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
     variants = read_csv(exp3_data_file("artificial_variant_effect.csv"))
     donor_loss = variants[variants["variant_type"] == "donor_loss"].iloc[0]
-    gain_frame = variants[variants["variant_type"].astype(str).str.contains("gain")]
-    cryptic_gain = gain_frame.iloc[0]
+    donor_gain_frame = variants[variants["variant_type"] == "donor_gain"]
+    acceptor_gain_frame = variants[variants["variant_type"] == "acceptor_gain"]
     donor_profile = plot_delta_profile(
         donor_loss,
         out_figures / "variant_delta_profile_donor_loss.png",
         "WT vs Mut delta profile: donor loss",
     )
-    cryptic_profile = plot_delta_profile(
-        cryptic_gain,
-        out_figures / "variant_delta_profile_cryptic_gain.png",
-        "WT vs Mut delta profile: cryptic gain",
-    )
     write_dataframe(out_tables / "variant_delta_profile_donor_loss.csv", donor_profile)
-    write_dataframe(out_tables / "variant_delta_profile_cryptic_gain.csv", cryptic_profile)
+    if not donor_gain_frame.empty:
+        donor_gain_profile = plot_delta_profile(
+            donor_gain_frame.iloc[0],
+            out_figures / "variant_delta_profile_donor_gain.png",
+            "WT vs Mut delta profile: donor gain",
+        )
+        write_dataframe(out_tables / "variant_delta_profile_donor_gain.csv", donor_gain_profile)
+    if not acceptor_gain_frame.empty:
+        acceptor_gain_profile = plot_delta_profile(
+            acceptor_gain_frame.iloc[0],
+            out_figures / "variant_delta_profile_acceptor_gain.png",
+            "WT vs Mut delta profile: acceptor gain",
+        )
+        write_dataframe(out_tables / "variant_delta_profile_acceptor_gain.csv", acceptor_gain_profile)
 
 
 def run_attention_heatmaps(out_figures: Path) -> None:

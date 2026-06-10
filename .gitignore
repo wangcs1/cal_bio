@@ -13,5 +13,7 @@ c669f101a9336b7831108dcb442c0c18.jpg
 
 __pycache__/
 *.pyc
+.python_deps/
+.venv/
 .vscode/
 PERSONAL_UNDERSTANDING_NOTES.md

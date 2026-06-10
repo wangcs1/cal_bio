@@ -1,6 +1,6 @@
 # C Part Combined Report
 
-Generated: 2026-06-10 21:55:32
+Generated: 2026-06-11 01:52:03
 
 ## Scope
 
@@ -32,12 +32,12 @@ Artificial variant summary:
 Splice-site donor/acceptor/non-splice classification. The table includes proxy/fallback rows
 and optional-real-tool rows where available.
 
-| model_key   | model                                        | split   |   rows |   accuracy |   macro_precision |   macro_recall |   macro_f1 |   auroc |   auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |   hard_negative_false_positives | hard_negative_filter                         |
-|:------------|:---------------------------------------------|:--------|-------:|-----------:|------------------:|---------------:|-----------:|--------:|--------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|--------------------------------:|:---------------------------------------------|
-| cnn         | CNN baseline (PyTorch Conv1D)                | test    |    285 |     0.8877 |            0.9111 |         0.8933 |     0.8858 |  0.9908 |  0.9814 |     0.9948 |        0.8531 |          0.8095 |              0.4776 |                   67 |                              32 | label == 2 and negative_type contains 'hard' |
-| rnafm       | RNA-FM frozen encoder + MLP                  | test    |    285 |     0.9614 |            0.9625 |         0.9623 |     0.9624 |  0.9972 |  0.9948 |     0.9418 |        1      |          0.9453 |              0.0746 |                   67 |                               5 | label == 2 and negative_type contains 'hard' |
-| rnabert     | RNABERT frozen encoder + MLP                 | test    |    285 |     0.9684 |            0.9688 |         0.9695 |     0.969  |  0.9983 |  0.9968 |     0.9583 |        0.9945 |          0.9543 |              0.0896 |                   67 |                               6 | label == 2 and negative_type contains 'hard' |
-| spliceai    | SpliceAI optional real tool (proxy fallback) | test    |    285 |     0.8737 |            0.892  |         0.88   |     0.868  |  0.9981 |  0.9962 |     0.9005 |        0.9231 |          0.7805 |              0.5224 |                   67 |                              35 | label == 2 and negative_type contains 'hard' |
+| model_key   | model                                        | model_type     | backend                            | split   |   rows |   accuracy |   macro_precision |   macro_recall |   macro_f1 |   auroc |   auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |
+|:------------|:---------------------------------------------|:---------------|:-----------------------------------|:--------|-------:|-----------:|------------------:|---------------:|-----------:|--------:|--------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|
+| cnn         | CNN baseline (PyTorch Conv1D)                | baseline       | pytorch_conv1d                     | test    |    285 |     0.9018 |            0.9196 |         0.9067 |     0.9005 |  0.9899 |  0.9802 |     0.9948 |        0.8696 |          0.8372 |              0.4179 |                   67 |                    67 |                              28 | label == 2 and negative_type contains 'hard' |
+| rnafm       | RNA-FM frozen encoder + MLP                  | frozen encoder | local_pretrained_or_proxy_fallback | test    |    285 |     0.9509 |            0.9522 |         0.9526 |     0.9519 |  0.9938 |  0.9888 |     0.9333 |        0.9945 |          0.9278 |              0.1493 |                   67 |                    67 |                              10 | label == 2 and negative_type contains 'hard' |
+| rnabert     | RNABERT frozen encoder + MLP                 | frozen encoder | local_pretrained_or_proxy_fallback | test    |    285 |     0.993  |            0.9932 |         0.993  |     0.9931 |  0.9999 |  0.9998 |     0.9948 |        0.9944 |          0.99   |              0.0149 |                   67 |                    67 |                               1 | label == 2 and negative_type contains 'hard' |
+| spliceai    | SpliceAI optional real tool (proxy fallback) | proxy          | spliceai_signal_proxy              | test    |    285 |     0.8737 |            0.892  |         0.88   |     0.868  |  0.9981 |  0.9962 |     0.9005 |        0.9231 |          0.7805 |              0.5224 |                   67 |                    67 |                              35 | label == 2 and negative_type contains 'hard' |
 
 ## Experiment 2
 
@@ -60,7 +60,7 @@ Artificial variant effect prediction plus ClinVar/sQTL smoke case studies.
 |:------------------------------------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | RNABERT zero-shot token distance                |  0.999  |  0.9993 |      46 |         0.1643 |            1.6429 |        460 |
 | RNA-FM zero-shot embedding distance             |  0.9986 |  0.9991 |      46 |         0.1643 |            1.6429 |        460 |
-| RNABERT zero-shot pseudo-likelihood             |  0.8873 |  0.944  |      46 |         0.1643 |            1.6429 |        460 |
+| RNABERT zero-shot pseudo-likelihood             |  0.8875 |  0.9441 |      46 |         0.1643 |            1.6429 |        460 |
 | RNA-FM zero-shot pseudo-likelihood              |  0.8791 |  0.9394 |      46 |         0.1643 |            1.6429 |        460 |
 | SpliceAI signal proxy                           |  0.8178 |  0.9048 |      46 |         0.1643 |            1.6429 |        460 |
 | Pangolin optional tool (small case-study proxy) |  0.8339 |  0.8865 |      46 |         0.1643 |            1.6429 |        460 |

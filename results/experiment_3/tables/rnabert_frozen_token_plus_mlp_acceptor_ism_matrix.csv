@@ -7,7 +7,7 @@ RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-29,A,0.002995223633664
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-29,C,0.0
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-29,G,0.00257782350761393
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-29,T,0.00021325266240657115
-RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-28,A,0.0026012035000728684
+RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-28,A,0.0026012035000726463
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-28,C,0.00215907181925723
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-28,G,0.002952661777229304
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-28,T,0.0
@@ -43,7 +43,7 @@ RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-20,A,0.001656705273616
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-20,C,4.902423865593697e-05
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-20,G,0.00126918126969211
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-20,T,0.0
-RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-19,A,0.000304934359951603
+RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-19,A,0.00030493435995138096
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-19,C,0.000393898872585674
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-19,G,0.0004817742509066747
 RNABERT frozen token + MLP,acceptor,syn_e6f20e741ee1af24,-19,T,0.0

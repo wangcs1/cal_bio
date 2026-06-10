@@ -229,6 +229,57 @@ def summarize_topk(scores: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(rows, ignore_index=True)
 
 
+def summarize_variant_types(scores: pd.DataFrame) -> pd.DataFrame:
+    top_models = [
+        "RNABERT zero-shot token distance",
+        "RNA-FM zero-shot embedding distance",
+        "SpliceAI signal proxy",
+        "MaxEntScan optional tool (proxy fallback)",
+    ]
+    rows = []
+    for model, model_frame in scores[scores["model"].isin(top_models)].groupby("model"):
+        for variant_type, group in model_frame.groupby("variant_type"):
+            labels = (group["label_name"] == "splice_altering").astype(int).to_numpy()
+            score = group["impact_score"].to_numpy()
+            rows.append(
+                {
+                    "model": model,
+                    "variant_type": variant_type,
+                    "mean_score": float(np.mean(score)),
+                    "median_score": float(np.median(score)),
+                    "rows": len(group),
+                    "positive_rate": float(np.mean(labels)),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def plot_variant_type_summary(summary: pd.DataFrame, out_dir: Path) -> None:
+    if summary.empty:
+        return
+    variant_order = summary["variant_type"].drop_duplicates().tolist()
+    model_order = summary["model"].drop_duplicates().tolist()
+    x = np.arange(len(variant_order))
+    width = 0.8 / max(1, len(model_order))
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    for idx, model in enumerate(model_order):
+        values = [
+            float(summary[(summary["model"] == model) & (summary["variant_type"] == variant_type)]["mean_score"].iloc[0])
+            if not summary[(summary["model"] == model) & (summary["variant_type"] == variant_type)].empty
+            else 0.0
+            for variant_type in variant_order
+        ]
+        ax.bar(x - 0.4 + width / 2 + idx * width, values, width, label=model)
+    ax.set_xticks(x, variant_order, rotation=25, ha="right")
+    ax.set_ylabel("Mean impact score")
+    ax.set_title("Variant effect scores by perturbation type")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(out_dir / "variant_effect_stratified_by_type.png", dpi=180)
+    plt.close(fig)
+
+
 def plot_calibration(scores: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     selected = scores[scores["model"] == scores.groupby("model")["impact_score"].mean().idxmax()]
     if selected.empty:
@@ -352,17 +403,27 @@ def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> di
     scores = score_variants(models, variants)
     metrics = summarize_metrics(scores)
     topk = summarize_topk(scores)
+    variant_summary = summarize_variant_types(scores)
     calibration = plot_calibration(scores, output_figures)
     write_dataframe(output_tables / "experiment_3A_artificial_variant_scores.csv", scores)
     write_dataframe(output_tables / "experiment_3A_artificial_variant_metrics.csv", metrics)
     write_dataframe(output_tables / "experiment_3A_topk_enrichment_curve.csv", topk)
+    write_dataframe(output_tables / "variant_effect_stratified_by_type.csv", variant_summary)
     write_dataframe(output_tables / "experiment_3A_calibration_bins.csv", calibration)
     plot_metric_bars(metrics, output_figures)
     plot_delta_boxplot(scores, output_figures)
+    plot_variant_type_summary(variant_summary, output_figures)
     run_saturation(models, output_tables, output_figures)
     clinvar = run_clinvar_smoke(output_tables, output_figures, models)
     sqtl = run_sqtl_case_study(output_tables, models)
-    return {"scores": scores, "metrics": metrics, "topk": topk, "clinvar": clinvar, "sqtl": sqtl}
+    return {
+        "scores": scores,
+        "metrics": metrics,
+        "topk": topk,
+        "variant_summary": variant_summary,
+        "clinvar": clinvar,
+        "sqtl": sqtl,
+    }
 
 
 def run_clinvar_smoke(output_tables: Path, output_figures: Path, models: list[object]) -> pd.DataFrame:
