@@ -17,6 +17,13 @@ MODEL_FACTORIES = {
     "spliceai": "src.models.spliceai_wrapper:SpliceAIThreeClassWrapper",
 }
 
+MODEL_METADATA = {
+    "cnn": {"model_type": "baseline", "backend": "pytorch_conv1d"},
+    "rnafm": {"model_type": "frozen encoder", "backend": "local_pretrained_or_proxy_fallback"},
+    "rnabert": {"model_type": "frozen encoder", "backend": "local_pretrained_or_proxy_fallback"},
+    "spliceai": {"model_type": "proxy", "backend": "spliceai_signal_proxy"},
+}
+
 
 def resolve_data_dir(data_dir: Path | None = None) -> Path:
     if data_dir is not None:
@@ -71,6 +78,14 @@ def make_model(model_key: str, seed: int):
     module_name, class_name = factory_path.split(":", 1)
     factory = getattr(import_module(module_name), class_name)
     return factory(random_state=seed)
+
+
+def model_metadata(model_key: str, model: object | None = None) -> dict[str, str]:
+    metadata = dict(MODEL_METADATA.get(model_key, {"model_type": "unknown", "backend": "unknown"}))
+    backend = getattr(model, "backend", None)
+    if backend:
+        metadata["backend"] = str(backend)
+    return metadata
 
 
 def save_model(path: Path, model: object) -> None:

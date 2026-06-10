@@ -325,6 +325,7 @@ def hard_negative_details(frame: pd.DataFrame, proba: np.ndarray) -> dict[str, o
         return {
             "hard_negative_fpr": float("nan"),
             "hard_negative_rows": 0,
+            "hard_negative_count": 0,
             "hard_negative_false_positives": 0,
             "hard_negative_filter": "missing negative_type",
         }
@@ -335,9 +336,14 @@ def hard_negative_details(frame: pd.DataFrame, proba: np.ndarray) -> dict[str, o
     return {
         "hard_negative_fpr": float(false_positives / rows) if rows else float("nan"),
         "hard_negative_rows": rows,
+        "hard_negative_count": rows,
         "hard_negative_false_positives": false_positives,
         "hard_negative_filter": "label == 2 and negative_type contains 'hard'",
     }
+
+
+def hard_negative_summary(frame: pd.DataFrame, proba: np.ndarray) -> dict[str, object]:
+    return hard_negative_details(frame, proba)
 
 
 def confusion_rows(y_true: Iterable[int], proba: np.ndarray, model_name: str, split: str) -> list[dict[str, object]]:

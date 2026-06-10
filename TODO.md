@@ -72,6 +72,7 @@
   - 输出：`results/experiment_1/tables/experiment_1_metrics.csv`
   - 输出：`results/experiment_1/figures/experiment_1_macro_f1.png`
   - 要点：将中心附近 donor / acceptor score 转成 `donor, acceptor, non_splice` 三分类概率。
+  - 完成备注：当前环境缺少真实 `spliceai` 包，实验一主表中的该行以 `backend=spliceai_signal_proxy` 明确标注；不会把 proxy fallback 写成真实 SpliceAI 完整推理。
   - 验收：metrics 表中新增 SpliceAI 行，且该行只基于 `data/shared/splits/test.csv` 计算。
 
 - [x] 修正实验一 hard-negative FPR。

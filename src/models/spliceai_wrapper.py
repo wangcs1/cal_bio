@@ -14,6 +14,8 @@ class SpliceAIThreeClassWrapper:
     """
 
     name = "SpliceAI optional real tool (proxy fallback)"
+    model_type = "proxy"
+    backend = "spliceai_signal_proxy"
 
     def __init__(self, random_state: int = 42, center_radius: int = 50) -> None:
         self.random_state = random_state

@@ -6,26 +6,26 @@ CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
 CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
 CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
 CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
-CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,31
-CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,68
-RNA-FM frozen encoder + MLP,test,0,donor,0,donor,89
+CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,27
+CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,72
+RNA-FM frozen encoder + MLP,test,0,donor,0,donor,91
 RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,0
-RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,6
+RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,4
 RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
 RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
 RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
-RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,5
-RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
-RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,95
-RNABERT frozen encoder + MLP,test,0,donor,0,donor,92
+RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,9
+RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,1
+RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,90
+RNABERT frozen encoder + MLP,test,0,donor,0,donor,95
 RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
-RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,3
+RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,0
 RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
-RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,90
-RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,0
-RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,5
-RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,1
-RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,94
+RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,89
+RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,1
+RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,1
+RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,99
 SpliceAI optional real tool (proxy fallback),test,0,donor,0,donor,95
 SpliceAI optional real tool (proxy fallback),test,0,donor,1,acceptor,0
 SpliceAI optional real tool (proxy fallback),test,0,donor,2,non_splice,0

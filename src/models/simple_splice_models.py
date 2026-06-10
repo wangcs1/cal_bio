@@ -55,6 +55,7 @@ class FeatureLogisticClassifier(SequenceClassifier):
         return self.estimator.predict_proba(self.scaler.transform(x))
 
     def _features(self, sequences: list[str]) -> np.ndarray:
+        sequences = [seq.upper().replace("U", "T") for seq in sequences]
         if self.mode == "cnn":
             return np.vstack([self._one_hot(seq) for seq in sequences])
         if self.mode == "rnafm":

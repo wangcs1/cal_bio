@@ -77,17 +77,23 @@ def write_report(path: Path, data_dir: Path, train_summary: pd.DataFrame, test_m
         "",
         test_metrics[
             [
-                "model",
-                "rows",
-                "accuracy",
-                "macro_f1",
-                "auroc",
-                "auprc",
-                "donor_f1",
-                "acceptor_f1",
-                "non_splice_f1",
-                "hard_negative_fpr",
-                "hard_negative_rows",
+                col
+                for col in [
+                    "model",
+                    "model_type",
+                    "backend",
+                    "rows",
+                    "accuracy",
+                    "macro_f1",
+                    "auroc",
+                    "auprc",
+                    "donor_f1",
+                    "acceptor_f1",
+                    "non_splice_f1",
+                    "hard_negative_fpr",
+                    "hard_negative_rows",
+                ]
+                if col in test_metrics.columns
             ]
         ].to_markdown(index=False),
         "",

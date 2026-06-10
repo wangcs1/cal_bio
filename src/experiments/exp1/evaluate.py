@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.experiments.exp1.common import load_model, load_split, parse_model_list, resolve_data_dir
+from src.experiments.exp1.common import load_model, load_split, model_metadata, parse_model_list, resolve_data_dir
 from src.utils import EXP1_TABLES_DIR, PROJECT_ROOT, confusion_rows, hard_negative_details, multiclass_metrics, write_dataframe
 
 
@@ -18,6 +18,7 @@ def evaluate_one(model_key: str, checkpoint_dir: Path, data_dir: Path, split: st
     row = {
         "model_key": model_key,
         "model": model.name,
+        **model_metadata(model_key, model),
         "split": split,
         "rows": len(frame),
         **metrics,

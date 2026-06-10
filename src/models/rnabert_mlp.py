@@ -3,6 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.models.foundation_backbones import FrozenRnaFoundationClassifier
+from src.models.simple_splice_models import FeatureLogisticClassifier
+
+
+class RNABERTProxyClassifier(FeatureLogisticClassifier):
+    def __init__(self, random_state: int = 42) -> None:
+        super().__init__("RNABERT proxy (token/k-mer + signal MLP)", "rnabert", random_state=random_state)
 
 
 class RNABERTMLPClassifier(FrozenRnaFoundationClassifier):
