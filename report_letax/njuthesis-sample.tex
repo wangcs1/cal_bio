@@ -1,162 +1,412 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% njuthesis 示例模板 v1.5.1 2026-05-30
-% https://github.com/nju-lug/NJUThesis
-%
-% 贡献者
-% Yu XIONG @atxy-blip   Yichen ZHAO @FengChendian
-% Song GAO @myandeg     Chang MA @glatavento
-% Yilun SUN @HermitSun  Yinfeng LIN @linyinfeng
-% Yukai CHOU @Muzimuzhi Liu Dongmiao@liudongmiao
-% Wenrui HUANG @rijuyuezhu
-%
-% 许可证
-% LaTeX Project Public License（版本 1.3c 或更高）
+% 计算生物学课程项目论文
+% 基于 NJUThesis 示例模板改写
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%---------------------------------------------------------------------
-% 一些提升使用体验的小技巧：
-%   1. 请务必使用 UTF-8 编码编写和保存本文档
-%   2. 请务必使用 XeLaTeX 或 LuaLaTeX 引擎进行编译
-%   3. 不保证接口稳定，写作前一定要留意版本号
-%   4. 以百分号(%)开头的内容为注释，可以随意删除
-%---------------------------------------------------------------------
-
-%---------------------------------------------------------------------
-% 请先阅读使用手册：
-% http://mirrors.ctan.org/macros/unicodetex/latex/njuthesis/njuthesis.pdf
-%---------------------------------------------------------------------
-
 \documentclass[
-    % 模板选项(注意右端逗号)：
-    %
-    % type = bachelor|master|doctor|postdoc, % 文档类型，默认为本科生
-    % degree = academic|professional,        % 学位类型，默认为学术型
-    %
-    % nl-cover,   % 是否需要国家图书馆封面，默认关闭
-    % decl-page,  % 是否需要诚信承诺书或原创性声明，默认关闭
-    %
-    %   页面模式，详见手册说明
-    % draft,                  % 开启草稿模式
-    % anonymous,              % 开启盲审模式
-    % minimal,                % 开启最小化模式
-    %
-    %   单双面模式，默认为适合印刷的双面模式
-    % oneside,                % 单面模式，无空白页
-    % twoside,                % 双面模式，每一章从奇数页开始
-    %
-    %   字体设置，建议使用 Windows 字库，详见手册
+    oneside,
     fontset = win,
-    % fontset = win|mac|macoffice|fandol|none,
   ]{njuthesis}
 
-% 模板选项设置，包括个人信息、外观样式等
-% 较为冗长且一般不需要反复修改，我们把它放在单独的文件里
 \input{njuthesis-setup.def}
 
-% 自行载入所需宏包
-% \usepackage{subcaption} % 嵌套小幅图像，比 subfig 和 subfigure 更新更好
-% \usepackage{siunitx} % 标准单位符号
-% \usepackage{physics} % 物理百宝箱
-% \usepackage[version=4]{mhchem} % 绘制分子式
-% \usepackage{listings} % 展示代码
-% \usepackage{algorithm,algorithmic} % 展示算法伪代码
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
 
-% 在导言区随意定制所需命令
-% \DeclareMathOperator{\spn}{span}
-% \NewDocumentCommand\mathbi{m}{\textbf{\em #1}}
+\njusetup[info]{
+    title = {小样本条件下 RNA 剪接位点识别\\多尺度上下文分析与异常剪接变异效应预测},
+    title* = {RNA Splice Site Recognition, Context Analysis, and Aberrant Splicing Variant Effect Prediction under Small-Sample Settings},
+    author = {课程项目小组},
+    author* = {Course Project Team},
+    keywords = {RNA 剪接,剪接位点识别,多尺度上下文,变异效应预测,可解释性},
+    keywords* = {RNA splicing,splice site recognition,multi-scale context,variant effect prediction,interpretability},
+    grade = {2026},
+    student-id = {请填写学号},
+    department = {请填写院系},
+    department* = {Department to be filled},
+    major = {计算生物学},
+    major* = {Computational Biology},
+    supervisor = {课程教师},
+    supervisor*= {Course Instructor},
+    submit-date = {2026-06-11}
+}
 
-% 开始编写论文
+\newcommand{\codepath}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\metric}[1]{\ensuremath{#1}}
+\newcommand{\todoauthor}{请填写作者信息}
+
 \begin{document}
 
-%---------------------------------------------------------------------
-%	封面、摘要、前言和目录
-%---------------------------------------------------------------------
-
-% 生成封面页
 \maketitle
-
-% 模板默认使用 \flushbottom，即底部平齐
-% 效果更好，但可能出现 underfull \vbox 信息
-% 以下命令用于抑制这些信息
 \raggedbottom
 
 \begin{abstract}
-  中文摘要
+RNA 剪接是连接基因组序列、转录本结构与功能变异的重要分子过程。经典剪接位点通常包含 donor 侧的 GT 和 acceptor 侧的 AG 等局部共识序列，但真实剪接调控并不等价于对短 motif 的简单匹配：假阳性 GT/AG、上下游序列背景、组织使用差异以及单核苷酸变异都可能改变模型判断。围绕这一问题，本文基于当前仓库实现的三个实验构建一条完整的计算生物学分析链路：首先在小样本条件下建立 donor、acceptor 与 non-splice 三分类模型，验证基础剪接位点识别能力；随后通过多尺度上下文、hard-negative 和 rare motif 分析检验模型是否真正利用序列上下文；最后将识别模型转化为异常剪接变异效应预测器，并结合 zero-shot score、delta score、校准曲线和可解释性图件分析变异影响区域。
+
+本项目不使用百万级完整数据集作为主实验输入，而采用可复现的小样本 split：训练集 855 条、验证集 120 条、测试集 285 条。实验一显示，RNABERT frozen/proxy 路线在测试集上达到 Macro-F1 0.9931，hard-negative FPR 为 0.0149；RNA-FM 路线也优于 CNN motif baseline。实验二显示，局部 motif 虽然提供强信号，但 CNN baseline 在 hard-negative 上仍有 0.4179 的误报率，而上下文模型与 splice signal proxy 明显降低误报。实验三进一步构造 460 条人工变异，覆盖 donor loss、acceptor loss、donor gain、acceptor gain 与 neutral far SNV，RNABERT zero-shot token distance 在人工变异排序上达到 AUROC 0.9990、AUPRC 0.9993。整体结果说明：在小样本、proxy/fallback 边界清晰的前提下，剪接识别、上下文验证和变异效应解释可以形成一条逻辑闭合的课程项目分析流程。
 \end{abstract}
 
 \begin{abstract*}
-  English abstract
+RNA splicing links genomic sequence, transcript structure, and functional variants. Canonical splice sites often contain local consensus motifs such as donor-side GT and acceptor-side AG, but splice regulation cannot be reduced to short-motif matching. False-positive GT/AG sites, surrounding sequence context, tissue-specific usage, and single-nucleotide variants may all affect splice prediction. This course project builds a coherent computational biology workflow from three implemented experiments: splice-site three-class classification, multi-scale context and hard-negative analysis, and aberrant splicing variant effect prediction.
+
+The main experiments use a reproducible small split rather than a million-scale dataset: 855 training samples, 120 validation samples, and 285 test samples. Experiment 1 establishes donor/acceptor/non-splice recognition. Experiment 2 tests whether the models rely on contextual evidence beyond local motifs. Experiment 3 converts splice recognition into variant effect scoring with zero-shot scores, delta scores, calibration, and interpretability profiles. The results show that the small-sample pipeline is sufficient for a logically complete course project, provided that proxy/fallback models and optional real-tool case studies are clearly separated.
 \end{abstract*}
 
-% 生成目录
 \tableofcontents
-% 生成图片清单
-% \listoffigures
-% 生成表格清单
-% \listoftables
 
-%---------------------------------------------------------------------
-%	正文部分
-%---------------------------------------------------------------------
 \mainmatter
-
-% 符号表
-% 语法与 description 环境一致
-% 两个可选参数依次为说明区域宽度、符号区域宽度
-% 带星号的符号表(notation*)不会插入目录
-% \begin{notation}[10cm]
-%   \item[DFT] 密度泛函理论 (Density functional theory)
-%   \item[DMRG] 密度矩阵重正化群 (Density-Matrix Reformation-Group)
-% \end{notation}
-
-% 建议将论文内容拆分为多个文件
-% 即新建一个 chapters 文件夹
-% 把每一章的内容单独放入一个 .tex 文件
-% 然后在这里用 \include 导入，例如
-%   \include{chapters/introduction}
-%   \include{chapters/environments}
 
 \chapter{引言}
 
-\section{量子计算}
+RNA 剪接决定了前体 mRNA 中外显子与内含子的连接方式，是从基因组编码到转录本功能的关键中间层。剪接位点识别通常依赖 donor 位点附近的 GT、acceptor 位点附近的 AG，以及多聚嘧啶区、分支点和上下游调控元件等更复杂的信息。对于计算生物学任务而言，一个自然的问题是：模型究竟是在学习真实的剪接上下文，还是仅仅在匹配短 motif。
 
-John Preskill 认为我们现在处于“含噪声的中型量子时代”。\cite{preskill2018}
-量子位的不稳定性和有限的量子比特数量限制了量子计算机的复杂度和纠错能力。
+这一问题在变异效应预测中更加重要。一个单核苷酸变异可能破坏原有 donor 或 acceptor，也可能在非剪接区域制造新的 cryptic splice signal。若模型只能识别局部 GT/AG，它可能在 hard-negative 上产生大量误报，也难以解释变异造成的剪接信号变化。因此，单独报告三分类准确率是不够的；更完整的分析应当包括上下文消融、困难负例、非经典 motif、变异 delta score 和可解释性分析。
 
-%---------------------------------------------------------------------
-%	参考文献
-%---------------------------------------------------------------------
+本文将当前仓库中的三个实验组织为一条递进叙述线。实验一回答“能否识别剪接位点”；实验二回答“识别是否依赖有效上下文而非简单 motif”；实验三回答“这种识别能力能否迁移到异常剪接变异效应预测”。三者共同构成从序列识别到机制验证再到变异解释的闭环。
 
-% 生成参考文献页
-\printbibliography
+\chapter{数据与方法}
 
-%---------------------------------------------------------------------
-%	致谢
-%---------------------------------------------------------------------
+\section{数据规模与小样本设定}
+
+项目主实验不使用百万级完整数据集，而使用仓库中已经准备好的小样本 split。数据质控报告显示，训练、验证和测试集类别较均衡，序列长度固定为 401 bp，且验证集和测试集相对于训练集没有 gene leakage。表 \ref{tab:data-split} 给出主实验数据规模。
+
+\begin{table}[H]
+  \centering
+  \caption{主实验使用的小样本 split}
+  \label{tab:data-split}
+  \begin{tabular}{lrrrrrr}
+    \hline
+    split & rows & donor & acceptor & non-splice & length & hard-negative \\
+    \hline
+    train & 855 & 276 & 288 & 291 & 401 & 195 \\
+    valid & 120 & 49 & 42 & 29 & 401 & 18 \\
+    test  & 285 & 95 & 90 & 100 & 401 & 67 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+四个上下文窗口文件位于 \codepath{data/shared/processed/}，分别为 pm50、pm100、pm200 和 pm400。变异效应实验使用 \codepath{data/experiment_3/artificial_variant_effect.csv}，ClinVar 与 GTEx/sQTL 仅作为 smoke 或 case study，不作为全量 benchmark。
+
+\section{模型与 proxy/fallback 边界}
+
+实验中包含三类模型。第一类是可在当前环境直接训练的 CNN motif baseline。第二类是 RNA-FM 和 RNABERT 的 frozen-encoder 路线：当本地预训练权重存在时使用 frozen encoder，否则使用确定性 proxy/fallback embedding。第三类是 SpliceAI、Pangolin、MMSplice、MaxEntScan 等 optional real-tool wrapper；在缺少真实外部依赖时，结果以 proxy fallback 或 small case study 标注。本文所有结论均限定在当前小样本和上述边界内，不声称完成真实外部工具的大规模评测。
+
+\section{评估指标}
+
+三分类任务报告 Accuracy、Macro-F1、AUROC、AUPRC，并单独统计 hard-negative FPR。hard-negative FPR 的分母限定为测试集中 \codepath{label == 2} 且 \codepath{negative_type} 包含 hard 的样本。变异效应任务将 splice-altering 与 neutral 作为二分类排序问题，报告 AUROC、AUPRC、Top-k recall 和 enrichment；同时按变异类型统计 mean impact score，并用校准曲线和 delta profile 解释模型行为。
+
+\chapter{实验一：剪接位点三分类}
+
+\section{实验设计}
+
+实验一将序列分为 donor、acceptor 和 non-splice 三类，目标是建立后续上下文分析和变异效应预测的基础分类器。训练使用 855 条样本，验证使用 120 条样本，最终测试使用 285 条样本。模型包括 CNN baseline、RNA-FM frozen/proxy、RNABERT frozen/proxy 和 SpliceAI signal proxy。
+
+\section{结果}
+
+表 \ref{tab:exp1-test} 展示测试集核心结果。RNABERT frozen/proxy 路线取得最高 Macro-F1，并将 hard-negative FPR 降至 0.0149。RNA-FM 相比 CNN baseline 也有明显提升。SpliceAI 行当前为 signal proxy fallback，其 AUROC 和 AUPRC 较高，但 hard-negative FPR 仍高于 RNABERT，因此不能简单等同于真实 SpliceAI 完整推理结论。
+
+\begin{table}[H]
+  \centering
+  \caption{实验一测试集三分类结果}
+  \label{tab:exp1-test}
+  \begin{tabular}{lrrrrr}
+    \hline
+    模型 & Accuracy & Macro-F1 & AUROC & AUPRC & Hard FPR \\
+    \hline
+    CNN baseline & 0.9018 & 0.9005 & 0.9899 & 0.9802 & 0.4179 \\
+    RNA-FM frozen/proxy & 0.9509 & 0.9519 & 0.9938 & 0.9888 & 0.1493 \\
+    RNABERT frozen/proxy & 0.9930 & 0.9931 & 0.9999 & 0.9998 & 0.0149 \\
+    SpliceAI signal proxy & 0.8737 & 0.8680 & 0.9981 & 0.9962 & 0.5224 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/experiment_1_macro_f1.png}}
+  \caption{实验一各模型测试集 Macro-F1 对比。}
+  \label{fig:exp1-macro-f1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\linewidth]{\detokenize{images/experiment_1_confusion_matrices.png}}
+  \caption{实验一各模型测试集混淆矩阵。该图用于观察 donor、acceptor 与 non-splice 之间的主要混淆来源。}
+  \label{fig:exp1-confusion}
+\end{figure}
+
+\section{小结}
+
+实验一说明，在小样本条件下，序列模型已经能够完成基础剪接位点识别。然而 CNN baseline 在 hard-negative 上误报较高，提示模型可能过度依赖局部 motif。这个问题引出实验二：剪接识别是否需要更大范围的上下文证据。
+
+\chapter{实验二：多尺度上下文与困难负例}
+
+\section{实验设计}
+
+实验二围绕三个问题展开。第一，改变上下文窗口 pm50、pm100、pm200、pm400，观察模型性能是否随上下文变化。第二，构造 GT/AG hard-negative，检验模型是否把局部 motif 误判为真实剪接位点。第三，通过 rare motif、tissue usage 和 long-range case study 讨论局部 motif 之外的生物学因素。
+
+\section{多尺度上下文结果}
+
+表 \ref{tab:exp2-context} 给出不同窗口下的 Macro-F1 与 hard-negative FPR。CNN motif baseline 对窗口变化不敏感，Macro-F1 稳定在 0.8733，hard-negative FPR 维持在 0.4179。相比之下，RNABERT、RNA-FM 和 SpliceAI signal proxy 在多个窗口上都显著降低 hard-negative 误报。
+
+\begin{table}[H]
+  \centering
+  \caption{实验二多尺度上下文结果}
+  \label{tab:exp2-context}
+  \begin{tabular}{rlrr}
+    \hline
+    flank & 模型 & Macro-F1 & Hard FPR \\
+    \hline
+    50  & CNN baseline & 0.8733 & 0.4179 \\
+    50  & RNA-FM frozen/proxy & 0.9897 & 0.0448 \\
+    50  & RNABERT frozen/proxy & 1.0000 & 0.0000 \\
+    50  & SpliceAI signal proxy & 0.9965 & 0.0149 \\
+    200 & CNN baseline & 0.8733 & 0.4179 \\
+    200 & RNA-FM frozen/proxy & 0.9453 & 0.1194 \\
+    200 & RNABERT frozen/proxy & 0.9895 & 0.0448 \\
+    200 & SpliceAI signal proxy & 0.9965 & 0.0149 \\
+    400 & CNN baseline & 0.8733 & 0.4179 \\
+    400 & RNA-FM frozen/proxy & 0.9588 & 0.0896 \\
+    400 & RNABERT frozen/proxy & 0.9825 & 0.0597 \\
+    400 & SpliceAI signal proxy & 0.9965 & 0.0149 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp2A_context_macro_f1.png}}
+  \caption{实验二不同上下文窗口下的 Macro-F1 变化。}
+  \label{fig:exp2-context-macro-f1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp2A_context_auprc.png}}
+  \caption{实验二不同上下文窗口下的 AUPRC 变化。}
+  \label{fig:exp2-context-auprc}
+\end{figure}
+
+\section{Hard-negative 与 rare motif}
+
+在 67 条 hard-negative 测试样本上，CNN baseline 产生 28 个 false positives，FPR 为 0.4179；RNABERT frozen/proxy 仅产生 3 个 false positives，FPR 为 0.0448；SpliceAI signal proxy 仅产生 1 个 false positive。Pangolin optional tool 当前为 small case-study proxy，FPR 为 0.4478，说明该结果只适合作为流程展示，而不是大规模真实 Pangolin 结论。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\linewidth]{\detokenize{images/exp2B_hard_negative_fpr.png}}
+  \caption{实验二 hard-negative false positive rate 对比。}
+  \label{fig:exp2-hard-fpr}
+\end{figure}
+
+Rare motif 分析进一步说明，模型对非经典 motif 的处理并不一致。GC-AG donor proxy 对 CNN 和 RNABERT 较容易，而 AT-AC acceptor proxy 对 CNN 和 SpliceAI signal proxy 较困难。这说明局部 motif 类型、训练分布和模型表示都会影响小样本泛化。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/regulatory_motif_masking_effect.png}}
+  \caption{调控 motif masking 对模型输出的影响。该图补充说明局部剪接二核苷酸之外的序列片段也会改变预测。}
+  \label{fig:exp2-regulatory-masking}
+\end{figure}
+
+\section{组织使用与长程 case study}
+
+Tissue usage 输出包含 200 行 synthetic/proxy case study，splice usage 范围为 0.2191 到 0.8959，均值 0.4946。Borzoi 和 AlphaGenome 仅保留两条 documented long-range proxy case：一个 synthetic 10kb-centered locus sketch 的 delta signal 为 -0.31，另一个 synthetic regulatory-context sketch 的 delta signal 为 0.22。它们用于说明长程调控建模方向，不作为真实模型全量推理结果。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp2C_tissue_splice_usage_heatmap.png}}
+  \caption{组织使用 case study 的 splice usage 热图。该图仅表示 synthetic/proxy 小样本 case，不代表 GTEx 全量建模。}
+  \label{fig:exp2-tissue-heatmap}
+\end{figure}
+
+\section{小结}
+
+实验二将实验一的分类结果推进到机制层面：局部 motif 是必要线索，但不是充分条件。hard-negative、rare motif 和 tissue/long-range case study 共同说明，剪接模型需要在局部共识序列之外利用更丰富的上下文信息。这为实验三中“变异如何改变剪接信号”提供了依据。
+
+\chapter{实验三：异常剪接变异效应预测}
+
+\section{实验设计}
+
+实验三将剪接识别模型应用到 SNV 变异效应预测。人工变异集共 460 条，其中 splice-altering 280 条，neutral far SNV 180 条。旧版合并 gain 分类已经拆分为 donor gain 与 acceptor gain。表 \ref{tab:exp3-variants} 给出变异类型分布。
+
+\begin{table}[H]
+  \centering
+  \caption{实验三人工变异集组成}
+  \label{tab:exp3-variants}
+  \begin{tabular}{lrr}
+    \hline
+    variant type & label & rows \\
+    \hline
+    acceptor gain & splice-altering & 55 \\
+    acceptor loss & splice-altering & 90 \\
+    donor gain & splice-altering & 45 \\
+    donor loss & splice-altering & 90 \\
+    neutral far SNV & neutral & 180 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+对每个变异，模型分别计算 reference 与 alternate 序列得分，并转化为 impact score。loss 类变异使用原剪接类别得分下降作为影响量；gain 类变异使用目标 donor 或 acceptor 信号上升作为影响量；neutral 变异则考察 donor/acceptor 得分变化幅度。
+
+\section{人工变异排序结果}
+
+表 \ref{tab:exp3-metrics} 显示，zero-shot distance 在人工变异排序中表现最好。RNABERT zero-shot token distance 达到 AUROC 0.9990 和 AUPRC 0.9993；RNA-FM zero-shot embedding distance 达到 AUROC 0.9986 和 AUPRC 0.9991。相比之下，MLP 分类器直接迁移到变异效应时表现较弱，说明“识别剪接位点”和“量化变异影响”并非完全相同的任务。
+
+\begin{table}[H]
+  \centering
+  \caption{实验三人工变异效应预测结果}
+  \label{tab:exp3-metrics}
+  \begin{tabular}{lrrrr}
+    \hline
+    模型 & AUROC & AUPRC & Top-k recall & Enrichment \\
+    \hline
+    RNABERT zero-shot token distance & 0.9990 & 0.9993 & 0.1643 & 1.6429 \\
+    RNA-FM zero-shot embedding distance & 0.9986 & 0.9991 & 0.1643 & 1.6429 \\
+    RNABERT zero-shot pseudo-likelihood & 0.8875 & 0.9441 & 0.1643 & 1.6429 \\
+    RNA-FM zero-shot pseudo-likelihood & 0.8791 & 0.9394 & 0.1643 & 1.6429 \\
+    SpliceAI signal proxy & 0.8178 & 0.9048 & 0.1643 & 1.6429 \\
+    CNN motif baseline & 0.8196 & 0.8678 & 0.1643 & 1.6429 \\
+    RNABERT frozen/proxy + MLP & 0.6829 & 0.8183 & 0.1607 & 1.6071 \\
+    RNA-FM frozen/proxy + MLP & 0.5958 & 0.7584 & 0.1643 & 1.6429 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp3_variant_auroc.png}}
+  \caption{实验三人工变异效应预测 AUROC 对比。}
+  \label{fig:exp3-auroc}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp3_variant_auprc.png}}
+  \caption{实验三人工变异效应预测 AUPRC 对比。}
+  \label{fig:exp3-auprc}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{\detokenize{images/variant_effect_stratified_by_type.png}}
+  \caption{不同变异类型下的平均 impact score。}
+  \label{fig:exp3-type}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.90\linewidth]{\detokenize{images/exp3_delta_score_boxplot.png}}
+  \caption{实验三 splice-altering 与 neutral 变异的 delta score 分布。}
+  \label{fig:exp3-delta-boxplot}
+\end{figure}
+
+分类型结果显示，loss 类变异更容易被模型识别。例如 RNABERT zero-shot token distance 在 acceptor loss 与 donor loss 上的 mean score 均约为 1.75，而在 acceptor gain 和 donor gain 上分别为 0.2054 和 0.2712。SpliceAI signal proxy 对 donor loss 和 acceptor loss 也有明显响应，但对 gain 类变异响应较弱。这与生物学直觉一致：破坏已有强剪接位点通常比在背景序列中制造新剪接位点更容易检测。
+
+\section{ClinVar、sQTL 与可解释性}
+
+ClinVar smoke 仅包含 12 条变异，用于验证流程可运行，而不是完整 ClinVar benchmark。在该 smoke 集上，RNABERT zero-shot token distance 和 RNA-FM zero-shot embedding distance 均达到 AUROC 1.0000、AUPRC 1.0000；SpliceAI signal proxy 达到 AUROC 0.9167、AUPRC 0.9167。由于样本极少，这一结果只能说明流程闭环，不能作为泛化性能结论。
+
+sQTL case study 保留 variant id、组织、目标基因、目标 junction、观察方向和模型 delta score 等字段，用于展示变异效应与组织剪接事件之间的连接方式。该部分同样不声称完成全量 GTEx 建模。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{\detokenize{images/exp3_calibration_curve.png}}
+  \caption{实验三校准曲线。当前曲线基于 RNABERT zero-shot token distance 生成。}
+  \label{fig:exp3-calibration}
+\end{figure}
+
+解释性分析包括 donor、acceptor 和 hard-negative 的 in-silico mutagenesis，RNA-FM/RNABERT attention proxy heatmap，以及 donor loss、donor gain、acceptor gain 与 ClinVar smoke case 的 delta profile。这些图件将模型得分变化重新投影到序列位置上，使变异效应不只是一个标量分数，而可以被解释为局部剪接信号的增强或削弱。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{\detokenize{images/ism_donor_heatmap.png}}
+  \caption{donor case 的 in-silico mutagenesis 热图。横轴为相对位置，颜色表示替换碱基后的目标类别概率变化。}
+  \label{fig:exp3-ism-donor}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\linewidth]{\detokenize{images/attention_hard_negative_heatmap.png}}
+  \caption{hard-negative case 的 attention proxy 热图，用于观察模型在困难负例上的关注区域。}
+  \label{fig:exp3-attention-hard}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{\detokenize{images/variant_delta_profile_donor_loss.png}}
+  \caption{donor loss 人工变异的 WT/Mut 剪接信号 delta profile。}
+  \label{fig:exp3-donor-loss-profile}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{\detokenize{images/variant_delta_profile_clinvar_smoke_case.png}}
+  \caption{ClinVar smoke case 的 WT/Mut 剪接信号 delta profile。}
+  \label{fig:exp3-clinvar-profile}
+\end{figure}
+
+\section{小结}
+
+实验三完成了从剪接识别到异常变异效应预测的迁移。zero-shot distance 对人工变异排序最稳定，loss 类变异比 gain 类变异更容易识别，ClinVar 与 sQTL case study 则展示了流程如何连接到真实资源。由于数据规模较小，所有真实资源相关结论均应视为 smoke 或 case study，而不是全量基准。
+
+\chapter{讨论}
+
+\section{三个实验之间的逻辑关系}
+
+本文的核心并不是分别报告三个独立实验，而是建立一条递进链路。实验一提供基础识别能力；实验二检验这种能力是否建立在合理上下文之上；实验三将该能力转化为变异效应评分，并通过解释性分析回到序列机制。若没有实验二，实验一的高分可能只是 motif 记忆；若没有实验三，剪接识别只能停留在分类任务，无法服务于变异解释。
+
+\section{小样本设定的意义与限制}
+
+本项目明确不使用百万级完整数据集，而选择约千条级别的小样本 split。这一选择降低了存储和运行门槛，使课程项目能够完整覆盖数据构建、模型训练、结果评估和报告生成。小样本设置也迫使报告清晰区分主实验、proxy/fallback、optional real-tool wrapper 和 smoke case study。
+
+限制同样明确。首先，小样本结果不能代表全基因组泛化性能。其次，部分 foundation model 和真实剪接工具当前依赖 proxy/fallback，不能写成完整真实模型评测。第三，ClinVar 和 GTEx/sQTL 只做少量 case study，不能得出临床或组织特异性总体结论。后续工作可在相同代码结构下接入本地权重、完整 raw data 和更大规模真实变异集。
+
+\chapter{结论}
+
+本文基于当前仓库实现，完成了一篇围绕 RNA 剪接的计算生物学课程项目论文。三个实验共同说明：第一，小样本条件下可以建立 donor、acceptor、non-splice 三分类模型；第二，hard-negative 和 rare motif 分析证明局部 motif 不是充分条件，模型需要利用上下文；第三，剪接识别模型可以进一步转化为异常剪接变异效应预测，并通过 zero-shot score、delta profile 和校准分析给出可解释结果。
+
+因此，项目形成了从序列分类到机制验证再到变异解释的完整叙述线。其价值不在于宣称大规模 benchmark，而在于提供一个边界清晰、可复现、可扩展的课程项目范式。
+
+\chapter*{参考资料}
+\addcontentsline{toc}{chapter}{参考资料}
+
+\begin{itemize}
+  \item 当前仓库实验报告：\codepath{reports/experiment_1.md}、\codepath{reports/experiment_2.md}、\codepath{reports/experiment_3.md}。
+  \item 当前仓库数据质控报告：\codepath{reports/data_qc.md}。
+  \item 当前仓库资源与模型说明：\codepath{reports/resource_setup.md}、\codepath{reports/model_cards.md}。
+  \item NJUThesis 模板说明：\codepath{report_letax/README.md}。
+\end{itemize}
 
 \begin{acknowledgement}
-  感谢 \href{https://git.nju.edu.cn/nju-lug/lug-introduction}{LUG@NJU}。
+感谢计算生物学课程提供的项目背景与实验要求。感谢 NJUThesis 模板维护者提供的论文排版框架。本项目所有主实验结果均来自当前仓库中的小样本数据、脚本和报告。
 \end{acknowledgement}
 
-%---------------------------------------------------------------------
-%	学术简历
-%---------------------------------------------------------------------
-
-% 详见手册中“成果列表”一节
-% \njuchapter{学术成果}
-% \section*{个人简历}
-% \njupaperlist[攻读博士学位期间发表的学术论文]{preskill2018}
-
-%---------------------------------------------------------------------
-%	附录部分
-%---------------------------------------------------------------------
-
-% 附录部分使用单独的字母序号
 \appendix
 
-% 可以在这里插入补充材料
-\chapter{正文中涉及的数据及源代码}
-\dots
+\chapter{数据、代码与结果路径}
 
-% 完工
+\section{数据路径}
+
+\begin{itemize}
+  \item 主 split：\codepath{data/shared/splits/train.csv}、\codepath{data/shared/splits/valid.csv}、\codepath{data/shared/splits/test.csv}。
+  \item 多尺度窗口：\codepath{data/shared/processed/splice_sites_pm50.csv}、\codepath{splice_sites_pm100.csv}、\codepath{splice_sites_pm200.csv}、\codepath{splice_sites_pm400.csv}。
+  \item 变异数据：\codepath{data/experiment_3/artificial_variant_effect.csv}。
+\end{itemize}
+
+\section{代码路径}
+
+\begin{itemize}
+  \item 实验一：\codepath{src/experiments/exp1/run_classification.py}。
+  \item 实验二：\codepath{src/experiments/exp2/run_multiscale.py} 与 \codepath{src/experiments/exp2/run_full_context.py}。
+  \item 实验三：\codepath{src/experiments/exp3/run_variant_effect.py} 与 \codepath{src/experiments/exp3/run_interpretability.py}。
+\end{itemize}
+
+\section{结果与报告路径}
+
+\begin{itemize}
+  \item 实验结果：\codepath{results/experiment_1/}、\codepath{results/experiment_2/}、\codepath{results/experiment_3/}。
+  \item 中文实验报告：\codepath{reports/experiment_1.md}、\codepath{reports/experiment_2.md}、\codepath{reports/experiment_3.md}。
+  \item 数据质控报告：\codepath{reports/data_qc.md}。
+\end{itemize}
+
 \end{document}
