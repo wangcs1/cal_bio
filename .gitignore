@@ -1,4 +1,9 @@
 data/raw/
+data/shared/processed/*.csv
+data/shared/splits/*.csv
+data/experiment_3/*.csv
+data/processed/
+data/splits/
 splits/
 models/hf/
 results/embeddings/

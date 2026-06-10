@@ -22,6 +22,20 @@ from sklearn.preprocessing import label_binarize
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = PROJECT_ROOT / "data"
+SHARED_PROCESSED_DIR = DATA_ROOT / "shared/processed"
+SHARED_SPLIT_DIR = DATA_ROOT / "shared/splits"
+EXP3_DATA_DIR = DATA_ROOT / "experiment_3"
+RESULTS_ROOT = PROJECT_ROOT / "results"
+EXP1_RESULTS_DIR = RESULTS_ROOT / "experiment_1"
+EXP2_RESULTS_DIR = RESULTS_ROOT / "experiment_2"
+EXP3_RESULTS_DIR = RESULTS_ROOT / "experiment_3"
+EXP1_TABLES_DIR = EXP1_RESULTS_DIR / "tables"
+EXP1_FIGURES_DIR = EXP1_RESULTS_DIR / "figures"
+EXP2_TABLES_DIR = EXP2_RESULTS_DIR / "tables"
+EXP2_FIGURES_DIR = EXP2_RESULTS_DIR / "figures"
+EXP3_TABLES_DIR = EXP3_RESULTS_DIR / "tables"
+EXP3_FIGURES_DIR = EXP3_RESULTS_DIR / "figures"
 BASES = "ACGT"
 LABELS = {0: "donor", 1: "acceptor", 2: "non_splice"}
 CLASS_ORDER = [0, 1, 2]
@@ -34,6 +48,25 @@ ALL_CHROMS = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
 def ensure_dirs(*paths: Path) -> None:
     for path in paths:
         path.mkdir(parents=True, exist_ok=True)
+
+
+def first_existing_path(*paths: Path) -> Path:
+    for path in paths:
+        if path.exists():
+            return path
+    return paths[0]
+
+
+def shared_processed_file(name: str) -> Path:
+    return first_existing_path(SHARED_PROCESSED_DIR / name, PROJECT_ROOT / "data/processed" / name)
+
+
+def shared_split_file(name: str) -> Path:
+    return first_existing_path(SHARED_SPLIT_DIR / name, PROJECT_ROOT / "data/splits" / name)
+
+
+def exp3_data_file(name: str) -> Path:
+    return first_existing_path(EXP3_DATA_DIR / name, PROJECT_ROOT / "data/processed" / name)
 
 
 def stable_id(*parts: object, prefix: str = "id") -> str:
@@ -349,4 +382,3 @@ def positional_base_features(sequence: str, positions: Iterable[int]) -> np.ndar
 def write_dataframe(path: Path, frame: pd.DataFrame) -> None:
     ensure_dirs(path.parent)
     frame.to_csv(path, index=False, encoding="utf-8")
-
