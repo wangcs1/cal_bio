@@ -1,28 +1,37 @@
 model,split,true_label,true_label_name,pred_label,pred_label_name,count
-CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,9704
-CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,15
-CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,281
-CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,33
-CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,9228
-CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,739
-CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,816
-CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,1896
-CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,7288
-RNA-FM + MLP,test,0,donor,0,donor,9741
-RNA-FM + MLP,test,0,donor,1,acceptor,5
-RNA-FM + MLP,test,0,donor,2,non_splice,254
-RNA-FM + MLP,test,1,acceptor,0,donor,116
-RNA-FM + MLP,test,1,acceptor,1,acceptor,8604
-RNA-FM + MLP,test,1,acceptor,2,non_splice,1280
-RNA-FM + MLP,test,2,non_splice,0,donor,1512
-RNA-FM + MLP,test,2,non_splice,1,acceptor,1472
-RNA-FM + MLP,test,2,non_splice,2,non_splice,7016
-RNABERT + MLP,test,0,donor,0,donor,9609
-RNABERT + MLP,test,0,donor,1,acceptor,2
-RNABERT + MLP,test,0,donor,2,non_splice,389
-RNABERT + MLP,test,1,acceptor,0,donor,80
-RNABERT + MLP,test,1,acceptor,1,acceptor,8080
-RNABERT + MLP,test,1,acceptor,2,non_splice,1840
-RNABERT + MLP,test,2,non_splice,0,donor,963
-RNABERT + MLP,test,2,non_splice,1,acceptor,636
-RNABERT + MLP,test,2,non_splice,2,non_splice,8401
+CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,95
+CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
+CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,0
+CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
+CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
+CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
+CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
+CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,31
+CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,68
+RNA-FM frozen encoder + MLP,test,0,donor,0,donor,89
+RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,0
+RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,6
+RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
+RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,5
+RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,95
+RNABERT frozen encoder + MLP,test,0,donor,0,donor,92
+RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
+RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,3
+RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
+RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,5
+RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,1
+RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,94
+SpliceAI optional real tool (proxy fallback),test,0,donor,0,donor,95
+SpliceAI optional real tool (proxy fallback),test,0,donor,1,acceptor,0
+SpliceAI optional real tool (proxy fallback),test,0,donor,2,non_splice,0
+SpliceAI optional real tool (proxy fallback),test,1,acceptor,0,donor,0
+SpliceAI optional real tool (proxy fallback),test,1,acceptor,1,acceptor,90
+SpliceAI optional real tool (proxy fallback),test,1,acceptor,2,non_splice,0
+SpliceAI optional real tool (proxy fallback),test,2,non_splice,0,donor,21
+SpliceAI optional real tool (proxy fallback),test,2,non_splice,1,acceptor,15
+SpliceAI optional real tool (proxy fallback),test,2,non_splice,2,non_splice,64

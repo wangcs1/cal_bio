@@ -16,7 +16,7 @@ import pandas as pd
 from src.experiments.exp1.evaluate import evaluate_many
 from src.experiments.exp1.common import parse_model_list, resolve_data_dir
 from src.experiments.exp1.train import train_many
-from src.utils import EXP1_FIGURES_DIR, EXP1_TABLES_DIR, LABELS, PROJECT_ROOT, ensure_dirs, write_dataframe
+from src.utils import CONFIG_ROOT, EXP1_FIGURES_DIR, EXP1_TABLES_DIR, LABELS, PROJECT_ROOT, ensure_dirs, load_config, write_dataframe
 
 
 def plot_metrics(metrics: pd.DataFrame, out_dir: Path) -> None:
@@ -64,9 +64,10 @@ def write_report(path: Path, data_dir: Path, train_summary: pd.DataFrame, test_m
         "",
         f"Data directory: `{data_dir}`",
         "",
-        "This run uses the available local Python environment. Because torch/RNA foundation model",
-        "dependencies are not installed in this environment, RNA-FM and RNABERT are implemented as",
-        "frozen-representation style k-mer/token proxies with lightweight classifier heads.",
+        "The main result uses the small split train/valid/test = 855/120/285.",
+        "RNA-FM/RNABERT rows are frozen-encoder models when local weights are present and",
+        "deterministic proxy embeddings otherwise. SpliceAI is an optional real-tool baseline",
+        "with a proxy fallback, evaluated only on the small test split.",
         "",
         "## Validation summary",
         "",
@@ -74,7 +75,21 @@ def write_report(path: Path, data_dir: Path, train_summary: pd.DataFrame, test_m
         "",
         "## Test summary",
         "",
-        test_metrics[["model", "rows", "accuracy", "macro_f1", "auroc", "auprc", "donor_f1", "acceptor_f1", "non_splice_f1"]].to_markdown(index=False),
+        test_metrics[
+            [
+                "model",
+                "rows",
+                "accuracy",
+                "macro_f1",
+                "auroc",
+                "auprc",
+                "donor_f1",
+                "acceptor_f1",
+                "non_splice_f1",
+                "hard_negative_fpr",
+                "hard_negative_rows",
+            ]
+        ].to_markdown(index=False),
         "",
         "Outputs:",
         "",
@@ -121,27 +136,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--figures-dir", type=Path, default=EXP1_FIGURES_DIR)
     parser.add_argument("--checkpoint-dir", type=Path, default=PROJECT_ROOT / "results/checkpoints/experiment_1")
     parser.add_argument("--report-path", type=Path, default=PROJECT_ROOT / "reports/experiment_1.md")
-    parser.add_argument("--models", default="cnn,rnafm,rnabert")
+    parser.add_argument("--config", type=Path, default=CONFIG_ROOT / "exp1_classification.yaml")
+    parser.add_argument("--models", default="cnn,rnafm,rnabert,spliceai")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--max-train-rows", type=int, default=60000)
-    parser.add_argument("--max-valid-rows", type=int, default=15000)
-    parser.add_argument("--max-test-rows", type=int, default=30000)
+    parser.add_argument("--max-train-rows", type=int, default=855)
+    parser.add_argument("--max-valid-rows", type=int, default=120)
+    parser.add_argument("--max-test-rows", type=int, default=285)
     parser.add_argument("--full-data", action="store_true")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    model_keys = parse_model_list(args.models)
-    max_train_rows = None if args.full_data else args.max_train_rows
-    max_valid_rows = None if args.full_data else args.max_valid_rows
-    max_test_rows = None if args.full_data else args.max_test_rows
+    config = load_config(args.config) if args.config else {}
+    model_value = ",".join(config.get("models", [])) if isinstance(config.get("models"), list) else config.get("models", args.models)
+    model_keys = parse_model_list(str(model_value))
+    data_dir = Path(config.get("data_dir", args.data_dir)) if config.get("data_dir") else args.data_dir
+    tables_dir = Path(config.get("tables_dir", args.tables_dir))
+    figures_dir = Path(config.get("figures_dir", args.figures_dir))
+    checkpoint_dir = Path(config.get("checkpoint_dir", args.checkpoint_dir))
+    report_path = Path(config.get("report_path", args.report_path))
+    max_train_rows = None if args.full_data else int(config.get("max_train_rows", args.max_train_rows))
+    max_valid_rows = None if args.full_data else int(config.get("max_valid_rows", args.max_valid_rows))
+    max_test_rows = None if args.full_data else int(config.get("max_test_rows", args.max_test_rows))
     metrics, _ = run(
-        data_dir=args.data_dir,
-        tables_dir=args.tables_dir,
-        figures_dir=args.figures_dir,
-        checkpoint_dir=args.checkpoint_dir,
-        report_path=args.report_path,
+        data_dir=data_dir,
+        tables_dir=tables_dir,
+        figures_dir=figures_dir,
+        checkpoint_dir=checkpoint_dir,
+        report_path=report_path,
         model_keys=model_keys,
         seed=args.seed,
         max_train_rows=max_train_rows,

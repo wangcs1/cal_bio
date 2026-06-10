@@ -18,6 +18,7 @@ from src.utils import (
     random_dna,
     split_name,
     stable_id,
+    validate_split_frame,
     write_dataframe,
 )
 
@@ -115,6 +116,7 @@ def write_windowed_outputs(frame: pd.DataFrame, windows: list[int], out_dir: Pat
         current["start"] = current["center"].astype(int) - window
         current["end"] = current["center"].astype(int) + window
         current["sequence"] = current["sequence"].astype(str).map(lambda seq: crop_center(seq, window))
+        validate_split_frame(current, f"synthetic window pm{window}")
         path = out_dir / f"splice_sites_pm{window}.csv"
         write_dataframe(path, current.drop(columns=[]))
         for split in ("train", "valid", "test"):
@@ -131,6 +133,41 @@ def summarize(frame: pd.DataFrame) -> pd.DataFrame:
         for label, label_frame in split_frame.groupby("label_name"):
             rows.append({"split": split, "label_name": label, "rows": len(label_frame)})
     return pd.DataFrame(rows).sort_values(["split", "label_name"])
+
+
+def build_rare_motif_dataset(source: pd.DataFrame, max_rows_per_type: int = 40) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    donor_source = source[source["label"].astype(int) == 0].head(max_rows_per_type)
+    acceptor_source = source[source["label"].astype(int) == 1].head(max_rows_per_type)
+    for idx, (_, row) in enumerate(donor_source.iterrows()):
+        seq = str(row["sequence"])
+        c = len(seq) // 2
+        rare = insert_motif(seq, c + 1, "GC")
+        current = row.to_dict()
+        current.update(
+            {
+                "sample_id": stable_id(row["sample_id"], "rare_gc_ag", idx, prefix="rare"),
+                "sequence": rare,
+                "motif_type": "rare_GC-AG_donor",
+                "data_source": "synthetic_rare_motif_case_study_v1",
+            }
+        )
+        rows.append(current)
+    for idx, (_, row) in enumerate(acceptor_source.iterrows()):
+        seq = str(row["sequence"])
+        c = len(seq) // 2
+        rare = insert_motif(seq, c - 2, "AC")
+        current = row.to_dict()
+        current.update(
+            {
+                "sample_id": stable_id(row["sample_id"], "rare_at_ac", idx, prefix="rare"),
+                "sequence": rare,
+                "motif_type": "rare_AT-AC_acceptor_proxy",
+                "data_source": "synthetic_rare_motif_case_study_v1",
+            }
+        )
+        rows.append(current)
+    return pd.DataFrame(rows).reset_index(drop=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -157,6 +194,9 @@ def build_and_write(
     write_dataframe(out_dir / "synthetic_splice_sites_master_pm400.csv", frame)
     write_windowed_outputs(frame, windows, out_dir, split_dir)
     write_dataframe(out_dir / "synthetic_splice_sites_summary.csv", summarize(frame))
+    rare = build_rare_motif_dataset(frame, max_rows_per_type=40)
+    rare["sequence"] = rare["sequence"].astype(str).map(lambda seq: crop_center(seq, 200))
+    write_dataframe(out_dir / "rare_motif_splice_sites.csv", rare)
     return frame
 
 

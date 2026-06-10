@@ -1,5 +1,6 @@
-model,test_easy_macro_f1,test_easy_auprc,test_hard_macro_f1,test_hard_auprc,cross_gene_macro_f1,cross_gene_auprc,hard_negative_fpr,test_easy_rows,test_hard_rows,cross_gene_rows
-CNN motif baseline,0.9484600879949717,1.0,0.8347368421052631,0.8616385998687054,0.8733333333333334,0.8939545175521625,0.417910447761194,218,252,285
-RNA-FM frozen k-mer + MLP,0.9484702093397747,0.9910793854074497,0.9362280045663898,0.9847253385576474,0.9452861952861952,0.9876117102622864,0.11940298507462686,218,252,285
-RNABERT frozen token + MLP,1.0,1.0,0.9869582078526565,1.0,0.9895156535069364,1.0,0.04477611940298507,218,252,285
-SpliceAI signal proxy,1.0,1.0,0.9956521137096885,1.0,0.9964833374978022,1.0,0.014925373134328358,218,252,285
+model,test_easy_macro_f1,test_easy_auprc,test_hard_macro_f1,test_hard_auprc,cross_gene_macro_f1,cross_gene_auprc,hard_negative_fpr,hard_negative_rows,hard_negative_false_positives,hard_negative_filter,test_easy_rows,test_hard_rows,cross_gene_rows,case_study_note
+CNN motif baseline,0.9484600879949717,1.0,0.8347368421052631,0.8616385998687054,0.8733333333333334,0.8939545175521625,0.417910447761194,67,28,label == 2 and negative_type contains 'hard',218,252,285,
+RNA-FM frozen k-mer + MLP,0.9484702093397747,0.9910793854074497,0.9362280045663898,0.9847253385576474,0.9452861952861952,0.9876117102622864,0.11940298507462686,67,8,label == 2 and negative_type contains 'hard',218,252,285,
+RNABERT frozen token + MLP,1.0,1.0,0.9869582078526565,1.0,0.9895156535069364,1.0,0.04477611940298507,67,3,label == 2 and negative_type contains 'hard',218,252,285,
+SpliceAI signal proxy,1.0,1.0,0.9956521137096885,1.0,0.9964833374978022,1.0,0.014925373134328358,67,1,label == 2 and negative_type contains 'hard',218,252,285,
+Pangolin optional tool (small case-study proxy),,,0.8874258316729785,0.9968597378280545,0.8874258316729785,0.9968597378280545,0.44776119402985076,67,30,label == 2 and negative_type contains 'hard',218,252,285,Pangolin proxy fallback; optional real tool case study only

@@ -1,0 +1,14 @@
+data_dir: data/shared/splits
+tables_dir: results/experiment_1/tables
+figures_dir: results/experiment_1/figures
+checkpoint_dir: results/checkpoints/experiment_1
+report_path: reports/experiment_1.md
+models:
+  - cnn
+  - rnafm
+  - rnabert
+  - spliceai
+seed: 42
+max_train_rows: 855
+max_valid_rows: 120
+max_test_rows: 285

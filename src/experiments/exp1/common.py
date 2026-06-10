@@ -6,28 +6,27 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from src.utils import PROJECT_ROOT, SHARED_SPLIT_DIR, ensure_dirs
+from src.data.build_synthetic_splice_dataset import build_and_write
+from src.utils import PROJECT_ROOT, REQUIRED_SPLIT_COLUMNS, SHARED_SPLIT_DIR, ensure_dirs, validate_split_frame
 
 
 MODEL_FACTORIES = {
     "cnn": "src.models.cnn:CNNBaselineClassifier",
     "rnafm": "src.models.rnafm_mlp:RNAFMMLPClassifier",
     "rnabert": "src.models.rnabert_mlp:RNABERTMLPClassifier",
+    "spliceai": "src.models.spliceai_wrapper:SpliceAIThreeClassWrapper",
 }
 
 
 def resolve_data_dir(data_dir: Path | None = None) -> Path:
     if data_dir is not None:
         return data_dir
-    root_splits = PROJECT_ROOT / "splits"
-    if (root_splits / "train.csv").exists():
-        return root_splits
-    if SHARED_SPLIT_DIR.exists():
-        return SHARED_SPLIT_DIR
-    return PROJECT_ROOT / "data/splits"
+    return SHARED_SPLIT_DIR
 
 
 def split_path(data_dir: Path, split: str) -> Path:
+    if not data_dir.exists() or not (data_dir / "train.csv").exists():
+        build_and_write()
     direct = data_dir / f"{split}.csv"
     if direct.exists():
         return direct
@@ -39,7 +38,10 @@ def split_path(data_dir: Path, split: str) -> Path:
 
 def load_split(data_dir: Path, split: str, max_rows: int | None, seed: int) -> pd.DataFrame:
     path = split_path(data_dir, split)
-    frame = pd.read_csv(path, usecols=lambda col: col in {"sample_id", "chrom", "label", "sequence", "gene_id"})
+    frame = pd.read_csv(path)
+    validate_split_frame(frame, path)
+    keep = sorted(REQUIRED_SPLIT_COLUMNS | {"motif_type", "data_source", "split"})
+    frame = frame.loc[:, [col for col in keep if col in frame.columns]]
     frame = frame.dropna(subset=["label", "sequence"]).copy()
     frame["label"] = frame["label"].astype(int)
     if max_rows is not None and len(frame) > max_rows:

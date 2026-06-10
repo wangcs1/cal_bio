@@ -25,6 +25,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import LeaveOneOut
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, label_binarize
 
+from src.models.borzoi_wrapper import build_long_range_case_study
 from src.models.simple_splice_models import FeatureLogisticClassifier, SpliceAIProxyClassifier
 from src.utils import (
     EXP2_FIGURES_DIR,
@@ -363,6 +364,10 @@ def run_tissue_specific_usage(tables: Path, figures: Path) -> pd.DataFrame:
     result = pd.DataFrame(rows)
     write_dataframe(tables / "tissue_specific_usage_ablation.csv", result)
     write_dataframe(tables / "tissue_specific_usage_case_study.csv", frame)
+    gtex_case = frame[["event_id", "tissue", "tissue_program", "splice_usage", "data_source"]].copy()
+    gtex_case["case_count"] = len(gtex_case)
+    gtex_case["note"] = "small GTEx-style tissue usage case study; not a full GTEx benchmark"
+    write_dataframe(tables / "experiment_2C_gtex_tissue_usage.csv", gtex_case)
     _barplot(
         result,
         x="model",
@@ -513,7 +518,7 @@ def run_variant_stratified_summary(tables: Path, figures: Path) -> pd.DataFrame:
         "RNABERT zero-shot token distance",
         "RNA-FM zero-shot embedding distance",
         "SpliceAI signal proxy",
-        "MaxEntScan consensus proxy",
+        "MaxEntScan optional tool (proxy fallback)",
     ]
     rows = []
     for model, model_frame in scores[scores["model"].isin(top_models)].groupby("model"):
@@ -629,6 +634,9 @@ def run(tables: Path | None = None, figures: Path | None = None) -> dict[str, pd
     outputs["variant_effect_stratified_by_type"] = run_variant_stratified_summary(tables, figures)
     outputs["tissue_specific_usage_ablation"] = run_tissue_specific_usage(tables, figures)
     outputs["junction_topology_ablation"] = run_junction_topology_ablation(tables, figures)
+    long_range = build_long_range_case_study()
+    write_dataframe(tables / "long_range_regulatory_case_study.csv", long_range)
+    outputs["long_range_regulatory_case_study"] = long_range
     return outputs
 
 

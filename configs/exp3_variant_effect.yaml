@@ -1,0 +1,4 @@
+tables_dir: results/experiment_3/tables
+figures_dir: results/experiment_3/figures
+variant_table: data/experiment_3/artificial_variant_effect.csv
+seed: 42

@@ -14,9 +14,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from src.data.build_clinvar_variant_dataset import build_clinvar_smoke
 from src.data.build_synthetic_splice_dataset import build_and_write
 from src.data.build_variant_dataset import build_and_write_variants
 from src.experiments.exp3.run_variant_effect import saturation_matrix, train_models
+from src.models.foundation_backbones import FrozenRnaFoundationClassifier
 from src.utils import (
     BASES,
     EXP2_FIGURES_DIR,
@@ -61,7 +63,6 @@ def plot_matrix(matrix: pd.DataFrame, out_path: Path, title: str) -> None:
 def run_ism(out_tables: Path, out_figures: Path, random_state: int) -> None:
     test = read_csv(shared_split_file("test_pm200.csv"))
     models = train_models(random_state)
-    model = next(model for model in models if model.name == "SpliceAI signal proxy")
     cases = [
         ("donor", test[test["label"].astype(int) == 0].iloc[0], 0, "ism_donor_heatmap.png"),
         ("acceptor", test[test["label"].astype(int) == 1].iloc[0], 1, "ism_acceptor_heatmap.png"),
@@ -72,12 +73,24 @@ def run_ism(out_tables: Path, out_figures: Path, random_state: int) -> None:
             "ism_hard_negative_heatmap.png",
         ),
     ]
-    for case_name, row, target_class, filename in cases:
-        matrix = saturation_matrix(model, str(row["sequence"]), target_class, flank=50)
-        matrix.insert(0, "case", case_name)
-        matrix.insert(1, "sample_id", row["sample_id"])
-        write_dataframe(out_tables / f"{case_name}_ism_matrix.csv", matrix)
-        plot_matrix(matrix, out_figures / filename, f"In silico mutagenesis: {case_name}")
+    for model in models:
+        model_slug = (
+            model.name.lower()
+            .replace(" ", "_")
+            .replace("+", "plus")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("-", "_")
+        )[:36]
+        for case_name, row, target_class, filename in cases:
+            matrix = saturation_matrix(model, str(row["sequence"]), target_class, flank=30)
+            matrix.insert(0, "model", model.name)
+            matrix.insert(1, "case", case_name)
+            matrix.insert(2, "sample_id", row["sample_id"])
+            write_dataframe(out_tables / f"{model_slug}_{case_name}_ism_matrix.csv", matrix)
+            if model.name == "SpliceAI signal proxy":
+                write_dataframe(out_tables / f"{case_name}_ism_matrix.csv", matrix)
+                plot_matrix(matrix, out_figures / filename, f"In silico mutagenesis: {case_name}")
 
 
 def plot_delta_profile(variant: pd.Series, out_path: Path, title: str) -> pd.DataFrame:
@@ -109,7 +122,8 @@ def plot_delta_profile(variant: pd.Series, out_path: Path, title: str) -> pd.Dat
 def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
     variants = read_csv(exp3_data_file("artificial_variant_effect.csv"))
     donor_loss = variants[variants["variant_type"] == "donor_loss"].iloc[0]
-    cryptic_gain = variants[variants["variant_type"] == "cryptic_gain"].iloc[0]
+    gain_frame = variants[variants["variant_type"].astype(str).str.contains("gain")]
+    cryptic_gain = gain_frame.iloc[0]
     donor_profile = plot_delta_profile(
         donor_loss,
         out_figures / "variant_delta_profile_donor_loss.png",
@@ -122,6 +136,52 @@ def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
     )
     write_dataframe(out_tables / "variant_delta_profile_donor_loss.csv", donor_profile)
     write_dataframe(out_tables / "variant_delta_profile_cryptic_gain.csv", cryptic_profile)
+
+
+def run_attention_heatmaps(out_figures: Path) -> None:
+    test = read_csv(shared_split_file("test_pm200.csv"))
+    cases = [
+        ("donor", test[test["label"].astype(int) == 0].iloc[0]),
+        ("acceptor", test[test["label"].astype(int) == 1].iloc[0]),
+        ("hard_negative", test[(test["label"].astype(int) == 2) & test["negative_type"].astype(str).str.contains("hard")].iloc[0]),
+    ]
+    encoder = FrozenRnaFoundationClassifier("rnafm")
+    for case_name, row in cases:
+        matrix = encoder.attention_matrix(str(row["sequence"]), flank=40)
+        fig, ax = plt.subplots(figsize=(5.2, 4.6))
+        image = ax.imshow(matrix, cmap="magma", aspect="auto")
+        center = matrix.shape[0] // 2
+        ax.axhline(center, color="cyan", linewidth=0.8)
+        ax.axvline(center, color="cyan", linewidth=0.8)
+        ax.set_title(f"RNA-FM/RNABERT attention proxy: {case_name}")
+        ax.set_xlabel("Sequence position")
+        ax.set_ylabel("Sequence position")
+        fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
+        fig.tight_layout()
+        fig.savefig(out_figures / f"attention_{case_name}_heatmap.png", dpi=180)
+        plt.close(fig)
+
+
+def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:
+    clinvar = build_clinvar_smoke()
+    case = clinvar[clinvar["label"].astype(int) == 1].iloc[0]
+    profile = plot_delta_profile(
+        case,
+        out_figures / "variant_delta_profile_clinvar_smoke_case.png",
+        "WT vs Mut delta profile: ClinVar smoke case",
+    )
+    profile["chrom"] = case["chrom"]
+    profile["pos"] = case["pos"]
+    profile["ref"] = case["ref"]
+    profile["alt"] = case["alt"]
+    profile["ref_sequence_window"] = case["wt_sequence"]
+    profile["alt_sequence_window"] = case["mut_sequence"]
+    wt = profile[profile["sequence_type"] == "WT"].set_index("relative_position")
+    mut = profile[profile["sequence_type"] == "Mut"].set_index("relative_position")
+    delta = (mut[["donor_score", "acceptor_score"]] - wt[["donor_score", "acceptor_score"]]).abs().max(axis=1)
+    max_pos = int(delta.idxmax()) if not delta.empty else 0
+    profile["max_abs_delta_position"] = max_pos
+    write_dataframe(out_tables / "variant_delta_profile_clinvar_smoke_case.csv", profile)
 
 
 def run_junction_case_study(out_tables: Path, out_figures: Path) -> None:
@@ -162,6 +222,8 @@ def run(out_tables: Path, out_figures: Path, random_state: int = 42) -> None:
     ensure_inputs()
     run_ism(out_tables, out_figures, random_state)
     run_variant_profiles(out_tables, out_figures)
+    run_attention_heatmaps(out_figures)
+    run_clinvar_delta_profile(out_tables, out_figures)
     run_junction_case_study(EXP2_TABLES_DIR, EXP2_FIGURES_DIR)
 
 

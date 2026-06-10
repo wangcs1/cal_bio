@@ -1,15 +1,5 @@
-# WSL/Linux real-data and real-model environment for C Part.
-# Verified on WSL2 / Ubuntu-22.04 / Python 3.10.
-
-numpy==1.26.4
-pandas
-scipy
-scikit-learn
-matplotlib
-seaborn
-tqdm
-pyyaml
-joblib
+# Optional real-data and real-model dependencies.
+# Install requirements.txt first; this file is only needed for real-model smoke tests.
 
 biopython
 pyfaidx

@@ -1,11 +1,11 @@
 motif_group,label_name,mean_rescue_gain
 ESE_proxy,acceptor,0.03501388250735004
 ESE_proxy,donor,0.6924366258032454
-ESE_proxy,non_splice,-0.002114494763400928
+ESE_proxy,non_splice,-0.002114494763400927
 ESS_proxy,acceptor,1.9716362207024118e-05
 ESS_proxy,donor,0.0014594781672679247
-ESS_proxy,non_splice,0.0026225239650520225
-ISE_proxy,acceptor,0.00034633851639930636
+ESS_proxy,non_splice,0.0026225239650520273
+ISE_proxy,acceptor,0.0003463385163993101
 ISE_proxy,donor,0.8039917749196794
 ISE_proxy,non_splice,-0.000260221676849115
 ISS_proxy,acceptor,0.6893218947813182

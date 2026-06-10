@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.experiments.exp1.common import load_model, load_split, parse_model_list, resolve_data_dir
-from src.utils import EXP1_TABLES_DIR, PROJECT_ROOT, confusion_rows, hard_negative_fpr, multiclass_metrics, write_dataframe
+from src.utils import EXP1_TABLES_DIR, PROJECT_ROOT, confusion_rows, hard_negative_details, multiclass_metrics, write_dataframe
 
 
 def evaluate_one(model_key: str, checkpoint_dir: Path, data_dir: Path, split: str, max_rows: int | None, seed: int):
@@ -14,7 +14,7 @@ def evaluate_one(model_key: str, checkpoint_dir: Path, data_dir: Path, split: st
     model = load_model(checkpoint_dir / f"{model_key}.joblib")
     proba = model.predict_proba(frame["sequence"].astype(str).tolist())
     metrics = multiclass_metrics(frame["label"].to_numpy(), proba)
-    metrics["hard_negative_fpr"] = hard_negative_fpr(frame, proba)
+    metrics.update(hard_negative_details(frame, proba))
     row = {
         "model_key": model_key,
         "model": model.name,

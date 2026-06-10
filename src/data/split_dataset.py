@@ -19,6 +19,7 @@ from collections import Counter
 from pathlib import Path
 
 from src.utils import SHARED_SPLIT_DIR, shared_processed_file
+from src.utils import REQUIRED_SPLIT_COLUMNS
 
 
 DEFAULT_SPLITS = {
@@ -87,6 +88,9 @@ def split_rows(args: argparse.Namespace) -> tuple[dict[str, list[dict[str, str]]
         reader = csv.DictReader(handle)
         if reader.fieldnames is None:
             raise ValueError(f"Input CSV has no header: {args.input}")
+        missing = sorted(REQUIRED_SPLIT_COLUMNS - set(reader.fieldnames))
+        if missing:
+            raise ValueError(f"Input CSV is missing required columns: {', '.join(missing)}")
         for row in reader:
             chrom = row["chrom"]
             split_name = chrom_to_split.get(chrom)

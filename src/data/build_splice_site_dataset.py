@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from src.utils import SHARED_PROCESSED_DIR
+from src.utils import REQUIRED_SPLIT_COLUMNS, SHARED_PROCESSED_DIR
 
 
 LABELS = {
@@ -510,6 +510,7 @@ def build_rows_for_window(
                 "center": site.center,
                 "label": site.label,
                 "label_name": LABELS[site.label],
+                "negative_type": "positive",
                 "sequence": sequence,
                 "gene_id": site.gene_id,
                 "transcript_id": site.transcript_id,
@@ -537,6 +538,7 @@ def build_rows_for_window(
                 "center": candidate.center,
                 "label": 2,
                 "label_name": LABELS[2],
+                "negative_type": "hard_gtag",
                 "sequence": sequence,
                 "gene_id": candidate.gene_id,
                 "transcript_id": candidate.transcript_id,
@@ -558,6 +560,7 @@ def write_csv(path: Path, rows: list[dict[str, object]], full_columns: bool) -> 
             "center",
             "label",
             "label_name",
+            "negative_type",
             "sequence",
             "gene_id",
             "transcript_id",
@@ -572,6 +575,12 @@ def write_csv(path: Path, rows: list[dict[str, object]], full_columns: bool) -> 
             "sequence",
             "gene_id",
         ]
+    missing = sorted(REQUIRED_SPLIT_COLUMNS - set(fieldnames))
+    if missing:
+        raise ValueError(
+            "Output field list is missing required split columns. "
+            "Use --full-columns or update fieldnames. Missing: " + ", ".join(missing)
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
@@ -607,7 +616,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--full-columns",
         action="store_true",
+        default=True,
         help="Write traceability columns: start,end,label_name,transcript_id.",
+    )
+    parser.add_argument(
+        "--minimal-columns",
+        dest="full_columns",
+        action="store_false",
+        help="Write the legacy minimal column set; not recommended for C Part experiments.",
     )
     parser.add_argument("--gtf-line-limit", type=int, default=None, help=argparse.SUPPRESS)
     return parser.parse_args()

@@ -109,15 +109,18 @@ def build_variant_dataset(source: pd.DataFrame, per_type: int = 90, seed: int = 
         c = len(str(row["sequence"])) // 2
         add_variant_row(rows, row, "acceptor_loss", 1, c - 2, "T", 1, rng)
 
-    cryptic_count = 0
+    gain_counts = {0: 0, 1: 0}
     for _, row in non_splice.iterrows():
         found = find_one_snv_to_motif(str(row["sequence"]), rng)
         if found is None:
             continue
         pos_index, alt, target_class = found
-        add_variant_row(rows, row, "cryptic_gain", 1, pos_index, alt, target_class, rng)
-        cryptic_count += 1
-        if cryptic_count >= per_type:
+        if gain_counts[target_class] >= per_type:
+            continue
+        variant_type = "donor_gain" if target_class == 0 else "acceptor_gain"
+        add_variant_row(rows, row, variant_type, 1, pos_index, alt, target_class, rng)
+        gain_counts[target_class] += 1
+        if all(count >= per_type for count in gain_counts.values()):
             break
 
     neutral_pool = frame.sample(n=min(per_type * 2, len(frame)), random_state=seed + 3)

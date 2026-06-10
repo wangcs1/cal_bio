@@ -15,8 +15,11 @@ import numpy as np
 import pandas as pd
 
 from src.data.build_synthetic_splice_dataset import DEFAULT_WINDOWS, build_and_write
+from src.models.borzoi_wrapper import build_long_range_case_study
+from src.models.pangolin_wrapper import PangolinCaseStudyWrapper
 from src.models.simple_splice_models import make_model_suite
 from src.utils import (
+    CONFIG_ROOT,
     EXP2_FIGURES_DIR,
     EXP2_TABLES_DIR,
     LABELS,
@@ -25,8 +28,11 @@ from src.utils import (
     confusion_rows,
     ensure_dirs,
     hard_negative_fpr,
+    hard_negative_details,
+    load_config,
     multiclass_metrics,
     read_csv,
+    shared_processed_file,
     shared_split_file,
     write_dataframe,
 )
@@ -114,13 +120,63 @@ def run_hard_negative(random_state: int, window: int = 200) -> pd.DataFrame:
                 "test_hard_auprc": hard_metrics["auprc"],
                 "cross_gene_macro_f1": cross_gene_metrics["macro_f1"],
                 "cross_gene_auprc": cross_gene_metrics["auprc"],
-                "hard_negative_fpr": cross_gene_metrics["hard_negative_fpr"],
+                **hard_negative_details(test, model.predict_proba(test["sequence"].astype(str).tolist())),
                 "test_easy_rows": len(easy),
                 "test_hard_rows": len(hard),
                 "cross_gene_rows": len(test),
             }
         )
+    pangolin = PangolinCaseStudyWrapper(random_state=random_state)
+    pangolin_proba = pangolin.predict_proba(test["sequence"].astype(str).tolist())
+    pangolin_metrics = multiclass_metrics(test["label"].astype(int).to_numpy(), pangolin_proba)
+    rows.append(
+        {
+            "model": pangolin.name,
+            "test_easy_macro_f1": float("nan"),
+            "test_easy_auprc": float("nan"),
+            "test_hard_macro_f1": pangolin_metrics["macro_f1"],
+            "test_hard_auprc": pangolin_metrics["auprc"],
+            "cross_gene_macro_f1": pangolin_metrics["macro_f1"],
+            "cross_gene_auprc": pangolin_metrics["auprc"],
+            **hard_negative_details(test, pangolin_proba),
+            "test_easy_rows": len(easy),
+            "test_hard_rows": len(hard),
+            "cross_gene_rows": len(test),
+            "case_study_note": "Pangolin proxy fallback; optional real tool case study only",
+        }
+    )
     return pd.DataFrame(rows)
+
+
+def run_rare_motif_case(random_state: int, output_tables: Path) -> pd.DataFrame:
+    rare_path = shared_processed_file("rare_motif_splice_sites.csv")
+    if not rare_path.exists():
+        build_and_write()
+    rare = read_csv(rare_path)
+    train = read_csv(shared_split_file("train_pm200.csv"))
+    valid = read_csv(shared_split_file("valid_pm200.csv"))
+    train_full = pd.concat([train, valid], ignore_index=True)
+    rows = []
+    for model in make_model_suite(random_state=random_state):
+        model.fit(train_full["sequence"].astype(str).tolist(), train_full["label"].astype(int).to_numpy())
+        for motif_type, group in rare.groupby("motif_type"):
+            proba = model.predict_proba(group["sequence"].astype(str).tolist())
+            metrics = multiclass_metrics(group["label"].astype(int).to_numpy(), proba)
+            target_prob = [float(proba[i, int(label)]) for i, label in enumerate(group["label"].astype(int).tolist())]
+            rows.append(
+                {
+                    "model": model.name,
+                    "motif_type": motif_type,
+                    "rows": len(group),
+                    "mean_target_probability": float(np.mean(target_prob)),
+                    "accuracy": metrics["accuracy"],
+                    "macro_f1": metrics["macro_f1"],
+                    "data_source": "synthetic rare-motif small case study",
+                }
+            )
+    result = pd.DataFrame(rows)
+    write_dataframe(output_tables / "experiment_2B_rare_motif.csv", result)
+    return result
 
 
 def plot_multiscale(metrics: pd.DataFrame, out_dir: Path) -> None:
@@ -182,6 +238,10 @@ def add_pangolin_case_study(out_table: Path, out_figure: Path) -> pd.DataFrame:
             )
     frame = pd.DataFrame(rows)
     write_dataframe(out_table, frame)
+    gtex = frame.rename(columns={"pangolin_proxy_splice_usage": "splice_usage"}).copy()
+    gtex["case_count"] = len(gtex)
+    gtex["note"] = "small tissue/event case study, not a full GTEx model"
+    write_dataframe(out_table.with_name("experiment_2C_gtex_tissue_usage.csv"), gtex)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
     image = ax.imshow(values, aspect="auto", cmap="viridis", vmin=0, vmax=1)
@@ -198,10 +258,18 @@ def add_pangolin_case_study(out_table: Path, out_figure: Path) -> pd.DataFrame:
     return frame
 
 
-def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> dict[str, pd.DataFrame]:
+def write_long_range_case_study(out_table: Path) -> pd.DataFrame:
+    frame = build_long_range_case_study()
+    write_dataframe(out_table, frame)
+    return frame
+
+
+def run(output_tables: Path, output_figures: Path, random_state: int = 42, windows: list[int] | None = None) -> dict[str, pd.DataFrame]:
     ensure_dirs(output_tables, output_figures)
-    metrics, confusion = run_multiscale(DEFAULT_WINDOWS, random_state=random_state)
+    windows = DEFAULT_WINDOWS if windows is None else windows
+    metrics, confusion = run_multiscale(windows, random_state=random_state)
     hard = run_hard_negative(random_state=random_state, window=200)
+    rare = run_rare_motif_case(random_state=random_state, output_tables=output_tables)
     write_dataframe(output_tables / "experiment_2A_multiscale_context.csv", metrics)
     pivot = metrics.pivot_table(index="model", columns="window_flank", values="macro_f1").reset_index()
     write_dataframe(output_tables / "experiment_2A_multiscale_context_pivot_macro_f1.csv", pivot)
@@ -213,20 +281,32 @@ def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> di
         output_tables / "experiment_2C_tissue_splice_usage_case_study.csv",
         output_figures / "exp2C_tissue_splice_usage_heatmap.png",
     )
-    return {"experiment_2A": metrics, "experiment_2B": hard, "experiment_2C": tissue}
+    long_range = write_long_range_case_study(output_tables / "long_range_regulatory_case_study.csv")
+    return {"experiment_2A": metrics, "experiment_2B": hard, "rare_motif": rare, "experiment_2C": tissue, "long_range": long_range}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run C-part experiment 2: context ablation and hard negatives.")
+    parser.add_argument("--config", type=Path, default=CONFIG_ROOT / "exp2_multiscale.yaml")
     parser.add_argument("--tables", type=Path, default=EXP2_TABLES_DIR)
     parser.add_argument("--figures", type=Path, default=EXP2_FIGURES_DIR)
+    parser.add_argument("--windows", type=int, nargs="+", default=DEFAULT_WINDOWS)
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    outputs = run(args.tables, args.figures, args.seed)
+    config = load_config(args.config) if args.config else {}
+    windows = [int(item) for item in config.get("windows", args.windows)]
+    if windows != DEFAULT_WINDOWS:
+        print(f"Using configured windows: {windows}")
+    outputs = run(
+        Path(config.get("tables_dir", args.tables)),
+        Path(config.get("figures_dir", args.figures)),
+        int(config.get("seed", args.seed)),
+        windows=windows,
+    )
     print(outputs["experiment_2A"][["window_flank", "model", "macro_f1", "auprc"]].to_string(index=False))
     print(outputs["experiment_2B"].to_string(index=False))
 

@@ -1,0 +1,11 @@
+numpy==1.26.4
+pandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+tqdm
+pyyaml
+joblib
+torch
+pytest

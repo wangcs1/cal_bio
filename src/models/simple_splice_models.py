@@ -160,3 +160,16 @@ def zero_shot_embedding_distance(wt_sequence: str, mut_sequence: str, mode: str)
     else:
         raise ValueError(f"Unknown zero-shot mode: {mode}")
     return float(np.linalg.norm(wt - mut))
+
+
+def pseudo_likelihood_proxy_score(sequence: str, mode: str) -> float:
+    features = engineered_signal_features(sequence)
+    if mode == "rnafm":
+        vocab = kmer_vocabulary([3, 4])
+        kmer_signal = np.dot(kmer_counts(sequence, vocab), np.linspace(0.1, 0.4, len(vocab)))
+    elif mode == "rnabert":
+        vocab = kmer_vocabulary([3, 5])
+        kmer_signal = np.dot(kmer_counts(sequence, vocab), np.linspace(0.1, 0.5, len(vocab)))
+    else:
+        raise ValueError(f"Unknown zero-shot mode: {mode}")
+    return float(0.65 * features[0] + 0.65 * features[1] + 0.15 * features[2] + 0.02 * kmer_signal)

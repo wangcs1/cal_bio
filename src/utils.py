@@ -23,6 +23,8 @@ from sklearn.preprocessing import label_binarize
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = PROJECT_ROOT / "data"
+CONFIG_ROOT = PROJECT_ROOT / "configs"
+REPORTS_DIR = PROJECT_ROOT / "reports"
 SHARED_PROCESSED_DIR = DATA_ROOT / "shared/processed"
 SHARED_SPLIT_DIR = DATA_ROOT / "shared/splits"
 EXP3_DATA_DIR = DATA_ROOT / "experiment_3"
@@ -39,6 +41,20 @@ EXP3_FIGURES_DIR = EXP3_RESULTS_DIR / "figures"
 BASES = "ACGT"
 LABELS = {0: "donor", 1: "acceptor", 2: "non_splice"}
 CLASS_ORDER = [0, 1, 2]
+REQUIRED_SPLIT_COLUMNS = {
+    "sample_id",
+    "chrom",
+    "start",
+    "end",
+    "strand",
+    "center",
+    "label",
+    "label_name",
+    "negative_type",
+    "sequence",
+    "gene_id",
+    "transcript_id",
+}
 TRAIN_CHROMS = {f"chr{i}" for i in range(1, 17)}
 VALID_CHROMS = {"chr17", "chr18"}
 TEST_CHROMS = {"chr19", "chr20", "chr21", "chr22", "chrX"}
@@ -149,6 +165,29 @@ def load_or_empty(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def load_config(path: Path | None) -> dict[str, object]:
+    if path is None:
+        return {}
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+    try:
+        import yaml
+    except Exception as exc:
+        raise RuntimeError("Reading config files requires pyyaml. Install requirements.txt first.") from exc
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload or {}
+
+
+def validate_columns(frame: pd.DataFrame, required: set[str], source: Path | str) -> None:
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"{source} is missing required columns: {', '.join(missing)}")
+
+
+def validate_split_frame(frame: pd.DataFrame, source: Path | str) -> None:
+    validate_columns(frame, REQUIRED_SPLIT_COLUMNS, source)
+
+
 def safe_roc_auc(y_true: np.ndarray, score: np.ndarray) -> float:
     try:
         if len(np.unique(y_true)) < 2:
@@ -220,6 +259,57 @@ def binary_ranking_metrics(y_true: Iterable[int], score: Iterable[float], k_frac
     }
 
 
+def topk_enrichment_curve(y_true: Iterable[int], score: Iterable[float], fractions: Iterable[float]) -> pd.DataFrame:
+    y = np.asarray(list(y_true), dtype=int)
+    s = np.asarray(list(score), dtype=float)
+    order = np.argsort(-s)
+    positives = int(y.sum())
+    base_rate = positives / len(y) if len(y) else float("nan")
+    rows = []
+    for fraction in fractions:
+        k = max(1, int(math.ceil(len(y) * float(fraction))))
+        top = y[order[:k]]
+        positive_count = int(top.sum())
+        precision = positive_count / k
+        recall = positive_count / positives if positives else float("nan")
+        enrichment = precision / base_rate if base_rate and not math.isnan(base_rate) else float("nan")
+        rows.append(
+            {
+                "fraction": float(fraction),
+                "k": int(k),
+                "positive_count": positive_count,
+                "precision": float(precision),
+                "recall": float(recall),
+                "enrichment": float(enrichment),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def calibration_bins(y_true: Iterable[int], score: Iterable[float], bins: int = 8) -> pd.DataFrame:
+    y = np.asarray(list(y_true), dtype=int)
+    s = np.asarray(list(score), dtype=float)
+    if len(s) == 0:
+        return pd.DataFrame(columns=["bin", "rows", "score_min", "score_max", "mean_score", "positive_rate"])
+    order = np.argsort(s)
+    chunks = np.array_split(order, min(bins, len(order)))
+    rows = []
+    for idx, chunk in enumerate(chunks, start=1):
+        values = s[chunk]
+        labels = y[chunk]
+        rows.append(
+            {
+                "bin": idx,
+                "rows": int(len(chunk)),
+                "score_min": float(np.min(values)),
+                "score_max": float(np.max(values)),
+                "mean_score": float(np.mean(values)),
+                "positive_rate": float(np.mean(labels)),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def hard_negative_fpr(frame: pd.DataFrame, proba: np.ndarray) -> float:
     if "negative_type" not in frame.columns:
         return float("nan")
@@ -228,6 +318,26 @@ def hard_negative_fpr(frame: pd.DataFrame, proba: np.ndarray) -> float:
     if mask.sum() == 0:
         return float("nan")
     return float(np.mean(pred[mask.to_numpy()] != 2))
+
+
+def hard_negative_details(frame: pd.DataFrame, proba: np.ndarray) -> dict[str, object]:
+    if "negative_type" not in frame.columns:
+        return {
+            "hard_negative_fpr": float("nan"),
+            "hard_negative_rows": 0,
+            "hard_negative_false_positives": 0,
+            "hard_negative_filter": "missing negative_type",
+        }
+    pred = np.argmax(proba, axis=1)
+    mask = (frame["label"].astype(int) == 2) & frame["negative_type"].astype(str).str.contains("hard", na=False)
+    rows = int(mask.sum())
+    false_positives = int((pred[mask.to_numpy()] != 2).sum()) if rows else 0
+    return {
+        "hard_negative_fpr": float(false_positives / rows) if rows else float("nan"),
+        "hard_negative_rows": rows,
+        "hard_negative_false_positives": false_positives,
+        "hard_negative_filter": "label == 2 and negative_type contains 'hard'",
+    }
 
 
 def confusion_rows(y_true: Iterable[int], proba: np.ndarray, model_name: str, split: str) -> list[dict[str, object]]:

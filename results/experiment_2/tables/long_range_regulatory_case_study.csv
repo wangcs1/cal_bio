@@ -1,0 +1,3 @@
+case_id,model,input_scope,predicted_track,wt_signal,mut_signal,delta_signal,status
+LR_CASE_001,Borzoi optional long-range case study,synthetic 10kb-centered locus sketch,splice_junction_usage,0.72,0.41,-0.31,documented proxy case; real model not required for main pipeline
+LR_CASE_002,AlphaGenome optional long-range case study,synthetic regulatory-context sketch,RNA-seq coverage / splice usage,0.36,0.58,0.22,documented proxy case; API/weights optional
