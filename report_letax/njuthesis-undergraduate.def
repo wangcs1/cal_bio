@@ -214,8 +214,8 @@
     { abstract    a } { 中文摘要        } { ABSTRACT              },
     { abstract    b } { 摘\qquad{}要    } { ABSTRACT              },
     { abstracttitle }
-      { \l__nju_name_nju_tl 本科生毕业论文（设计、作品）中文摘要  }
-      { \l__nju_name_nju_tl 本科生毕业论文（设计、作品）英文摘要  },
+      { \l__nju_name_nju_tl 计算生物学课程项目报告中文摘要  }
+      { \l__nju_name_nju_tl 计算生物学课程项目报告英文摘要},
     { appendix      } { 附录            } { appendix              },
     { author        } { 学生姓名        } { UNDERGRADUATE         },
     { blankdate     } { \qquad{}年 \quad{}月 \quad{}日   } {      },

@@ -2030,7 +2030,7 @@
 \NewDocumentEnvironment { abstract } { +b }
   {
     \cleardoublepage
-    \CTEX@setthispagestyle { chapter }
+    \CTEX@setthispagestyle {  }
     \__nju_abs_bookmark:Vn \l__nju_name_abstracta_tl { abstract }
     \tl_gremove_all:Nn \g__nju_info_title_tl { \\ }
     \__nju_make_abstract:
@@ -2040,7 +2040,7 @@
 \NewDocumentEnvironment { abstract* } { +b }
   {
     \cleardoublepage
-    \CTEX@setthispagestyle { chapter }
+    \CTEX@setthispagestyle {  }
     \__nju_abs_bookmark:Vn \l__nju_name_abstracta_en_tl { abstract-en }
     \tl_gremove_all:Nn \g__nju_info_title_en_tl { \\ }
     \__nju_make_abstract_en:
