@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import textwrap
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
@@ -16,18 +17,22 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.colors import TwoSlopeNorm
 
-from src.utils import EXP2_TABLES_DIR, EXP3_TABLES_DIR, PROJECT_ROOT, ensure_dirs
+from src.utils import EXP1_TABLES_DIR, EXP2_TABLES_DIR, EXP3_TABLES_DIR, PROJECT_ROOT, ensure_dirs
 
 
 REPORT_IMAGE_DIR = PROJECT_ROOT / "report_letax" / "images"
 
 MODEL_COLORS = {
     "CNN motif baseline": "#4C78A8",
+    "CNN baseline (PyTorch Conv1D)": "#4C78A8",
     "RNA-FM frozen k-mer + MLP": "#F58518",
+    "RNA-FM frozen encoder + MLP": "#F58518",
     "RNA-FM zero-shot embedding distance": "#F58518",
     "RNABERT frozen token + MLP": "#54A24B",
+    "RNABERT frozen encoder + MLP": "#54A24B",
     "RNABERT zero-shot token distance": "#54A24B",
     "SpliceAI signal proxy": "#E45756",
+    "SpliceAI optional real tool (proxy fallback)": "#E45756",
     "MaxEntScan optional tool (proxy fallback)": "#8E6C8A",
     "Pangolin optional tool (small case-study proxy)": "#7F7F7F",
 }
@@ -55,6 +60,16 @@ SELECTED_VARIANT_MODELS = [
     "SpliceAI signal proxy",
     "MaxEntScan optional tool (proxy fallback)",
 ]
+MAIN_EXP3_METRIC_MODELS = [
+    "RNABERT zero-shot token distance",
+    "RNA-FM zero-shot embedding distance",
+    "RNABERT zero-shot pseudo-likelihood",
+    "RNA-FM zero-shot pseudo-likelihood",
+    "SpliceAI signal proxy",
+    "CNN motif baseline",
+    "RNABERT frozen token + MLP",
+    "RNA-FM frozen k-mer + MLP",
+]
 
 
 def _set_style() -> None:
@@ -81,22 +96,74 @@ def _model_color(model: str) -> str:
 
 def _short_model_name(model: str) -> str:
     replacements = {
-        "RNA-FM frozen k-mer + MLP": "RNA-FM",
-        "RNA-FM zero-shot embedding distance": "RNA-FM",
-        "RNABERT frozen token + MLP": "RNABERT",
-        "RNABERT zero-shot token distance": "RNABERT",
-        "SpliceAI signal proxy": "SpliceAI",
-        "MaxEntScan optional tool (proxy fallback)": "MaxEntScan",
-        "CNN motif baseline": "CNN motif",
-        "Pangolin optional tool (small case-study proxy)": "Pangolin",
+        "RNA-FM frozen k-mer + MLP": "RNA-FM fallback k-mer+signal",
+        "RNA-FM frozen encoder + MLP": "RNA-FM fallback k-mer+signal",
+        "RNABERT frozen token + MLP": "RNABERT fallback token+signal",
+        "RNABERT frozen encoder + MLP": "RNABERT fallback token+signal",
+        "SpliceAI signal proxy": "SpliceAI-style signal proxy",
+        "SpliceAI optional real tool (proxy fallback)": "SpliceAI optional proxy",
+        "MaxEntScan optional tool (proxy fallback)": "MaxEntScan proxy",
+        "CNN motif baseline": "CNN motif baseline",
+        "CNN baseline (PyTorch Conv1D)": "CNN motif baseline",
+        "Pangolin optional tool (small case-study proxy)": "Pangolin small proxy",
     }
     return replacements.get(model, model)
+
+
+def _wrapped_model_name(model: str, width: int = 26) -> str:
+    return "\n".join(textwrap.wrap(_short_model_name(model), width=width, break_long_words=False))
 
 
 def _save(fig: plt.Figure, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=220, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_exp1_macro_f1(metrics: pd.DataFrame, out_dir: Path) -> None:
+    frame = metrics.copy().sort_values("macro_f1", ascending=True)
+    fig, ax = plt.subplots(figsize=(8.8, 4.8))
+    labels = [_wrapped_model_name(model, width=28) for model in frame["model"]]
+    colors = [_model_color(model) for model in frame["model"]]
+    bars = ax.barh(labels, frame["macro_f1"], color=colors, alpha=0.9)
+    ax.set_xlabel("Macro-F1")
+    ax.set_title("Experiment 1 splice-site classification Macro-F1")
+    ax.set_xlim(0.82, 1.01)
+    ax.grid(axis="x", alpha=0.6)
+    ax.grid(axis="y", visible=False)
+    for bar, value in zip(bars, frame["macro_f1"]):
+        ax.text(value + 0.004, bar.get_y() + bar.get_height() / 2, f"{value:.3f}", va="center", fontsize=8)
+    _save(fig, out_dir / "experiment_1_macro_f1.png")
+
+
+def plot_exp1_confusion_matrices(confusion: pd.DataFrame, out_dir: Path) -> None:
+    models = confusion["model"].drop_duplicates().tolist()
+    fig, axes = plt.subplots(1, len(models), figsize=(4.6 * len(models), 4.2), squeeze=False)
+    order = ["donor", "acceptor", "non_splice"]
+    for ax, model in zip(axes[0], models):
+        sub = confusion[confusion["model"] == model]
+        matrix = (
+            sub.pivot_table(index="true_label_name", columns="pred_label_name", values="count", aggfunc="sum")
+            .reindex(index=order, columns=order)
+            .fillna(0)
+            .astype(int)
+        )
+        sns.heatmap(
+            matrix,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            cbar=False,
+            square=True,
+            linewidths=0.5,
+            linecolor="white",
+            ax=ax,
+        )
+        ax.set_title(_wrapped_model_name(model, width=22), fontsize=9)
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("True")
+    fig.suptitle("Experiment 1 confusion matrices", y=1.03, fontsize=12, fontweight="bold")
+    _save(fig, out_dir / "experiment_1_confusion_matrices.png")
 
 
 def plot_context_macro_f1(metrics: pd.DataFrame, out_dir: Path) -> None:
@@ -195,7 +262,7 @@ def plot_context_auprc(metrics: pd.DataFrame, out_dir: Path) -> None:
 def plot_hard_negative_fpr(hard_metrics: pd.DataFrame, out_dir: Path) -> None:
     frame = hard_metrics.dropna(subset=["hard_negative_fpr"]).copy()
     frame = frame.sort_values("hard_negative_fpr", ascending=True)
-    frame["model_short"] = frame["model"].map(_short_model_name)
+    frame["model_short"] = frame["model"].map(lambda model: _wrapped_model_name(model, width=28))
     frame["false_positive_label"] = frame.apply(
         lambda row: f"{int(row['hard_negative_false_positives'])}/{int(row['hard_negative_rows'])}",
         axis=1,
@@ -587,19 +654,69 @@ def plot_variant_effect_by_type(summary: pd.DataFrame, out_dir: Path) -> None:
     _save(fig, out_dir / "variant_effect_stratified_by_type.png")
 
 
-def regenerate_report_figures(exp2_tables: Path = EXP2_TABLES_DIR, exp3_tables: Path = EXP3_TABLES_DIR, out_dir: Path = REPORT_IMAGE_DIR) -> None:
+def plot_exp3_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
+    for metric, filename, label in [
+        ("auroc", "exp3_variant_auroc.png", "AUROC"),
+        ("auprc", "exp3_variant_auprc.png", "AUPRC"),
+    ]:
+        frame = metrics[metrics["model"].isin(MAIN_EXP3_METRIC_MODELS)].copy()
+        order_lookup = {model: idx for idx, model in enumerate(MAIN_EXP3_METRIC_MODELS)}
+        frame["model_order"] = frame["model"].map(order_lookup)
+        frame = frame.sort_values("model_order", ascending=False)
+        fig, ax = plt.subplots(figsize=(9.4, 5.6))
+        labels = [_wrapped_model_name(model, width=32) for model in frame["model"]]
+        colors = [_model_color(model) for model in frame["model"]]
+        bars = ax.barh(labels, frame[metric], color=colors, alpha=0.9)
+        ax.set_xlabel(label)
+        ax.set_title(f"Experiment 3 artificial variant effect {label}")
+        ax.set_xlim(0.0, 1.03)
+        ax.grid(axis="x", alpha=0.6)
+        ax.grid(axis="y", visible=False)
+        for bar, value in zip(bars, frame[metric]):
+            ax.text(min(value + 0.01, 1.0), bar.get_y() + bar.get_height() / 2, f"{value:.3f}", va="center", fontsize=7.5)
+        _save(fig, out_dir / filename)
+
+
+def plot_score_bin_response_curve(bins: pd.DataFrame, out_dir: Path) -> None:
+    if bins.empty:
+        return
+    model_name = str(bins["model"].iloc[0]) if "model" in bins.columns else "selected model"
+    fig, ax = plt.subplots(figsize=(6.8, 4.6))
+    ax.plot(bins["mean_score"], bins["positive_rate"], marker="o", linewidth=2.2, color="#4C78A8")
+    for _, row in bins.iterrows():
+        ax.text(row["mean_score"], row["positive_rate"] + 0.035, f"n={int(row['rows'])}", ha="center", fontsize=7)
+    ax.set_xlabel("Mean impact score bin")
+    ax.set_ylabel("Observed splice-altering rate")
+    ax.set_title(f"Score-bin response curve\n({_short_model_name(model_name)}, bins={len(bins)})")
+    ax.set_ylim(-0.04, 1.08)
+    ax.grid(alpha=0.35)
+    _save(fig, out_dir / "exp3_calibration_curve.png")
+
+
+def regenerate_report_figures(
+    exp1_tables: Path = EXP1_TABLES_DIR,
+    exp2_tables: Path = EXP2_TABLES_DIR,
+    exp3_tables: Path = EXP3_TABLES_DIR,
+    out_dir: Path = REPORT_IMAGE_DIR,
+) -> None:
     _set_style()
     ensure_dirs(out_dir)
+    plot_exp1_macro_f1(pd.read_csv(exp1_tables / "experiment_1_metrics.csv"), out_dir)
+    plot_exp1_confusion_matrices(pd.read_csv(exp1_tables / "experiment_1_confusion_matrices.csv"), out_dir)
     context_metrics = pd.read_csv(exp2_tables / "experiment_2A_multiscale_context.csv")
     plot_context_macro_f1(context_metrics, out_dir)
     plot_context_auprc(context_metrics, out_dir)
+    plot_hard_negative_fpr(pd.read_csv(exp2_tables / "experiment_2B_hard_negative.csv"), out_dir)
     plot_regulatory_motif_masking(pd.read_csv(exp2_tables / "regulatory_motif_masking.csv"), out_dir)
+    plot_exp3_metric_bars(pd.read_csv(exp3_tables / "experiment_3A_artificial_variant_metrics.csv"), out_dir)
+    plot_score_bin_response_curve(pd.read_csv(exp3_tables / "experiment_3A_calibration_bins.csv"), out_dir)
     plot_delta_score_distribution(pd.read_csv(exp3_tables / "experiment_3A_artificial_variant_scores.csv"), out_dir)
     plot_variant_effect_by_type(pd.read_csv(exp3_tables / "variant_effect_stratified_by_type.csv"), out_dir)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Regenerate polished report figures from experiment result tables.")
+    parser.add_argument("--exp1-tables", type=Path, default=EXP1_TABLES_DIR)
     parser.add_argument("--exp2-tables", type=Path, default=EXP2_TABLES_DIR)
     parser.add_argument("--exp3-tables", type=Path, default=EXP3_TABLES_DIR)
     parser.add_argument("--out-dir", type=Path, default=REPORT_IMAGE_DIR)
@@ -608,7 +725,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    regenerate_report_figures(args.exp2_tables, args.exp3_tables, args.out_dir)
+    regenerate_report_figures(args.exp1_tables, args.exp2_tables, args.exp3_tables, args.out_dir)
     print(f"Report figures written to {args.out_dir}")
 
 
