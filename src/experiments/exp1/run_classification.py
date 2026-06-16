@@ -35,23 +35,53 @@ def plot_metrics(metrics: pd.DataFrame, out_dir: Path) -> None:
 
 def plot_confusion(confusion: pd.DataFrame, out_dir: Path) -> None:
     ensure_dirs(out_dir)
-    models = confusion["model"].unique().tolist()
-    fig, axes = plt.subplots(1, len(models), figsize=(4.2 * len(models), 3.8), squeeze=False)
+    preferred = [
+        "CNN baseline (PyTorch Conv1D)",
+        "RNA-FM frozen encoder + MLP",
+        "RNABERT frozen encoder + MLP",
+    ]
+    available = confusion["model"].unique().tolist()
+    models = [model for model in preferred if model in available]
+    models.extend([model for model in available if model not in models])
+    short_names = {
+        "CNN baseline (PyTorch Conv1D)": "CNN baseline",
+        "RNA-FM frozen encoder + MLP": "RNA-FM frozen encoder",
+        "RNABERT frozen encoder + MLP": "RNABERT frozen encoder",
+    }
+    fig, axes = plt.subplots(1, len(models), figsize=(4.35 * len(models), 4.15), squeeze=False)
+    fig.patch.set_facecolor("#fbf7ef")
     for ax, model in zip(axes[0], models):
+        ax.set_facecolor("#fffdf8")
         sub = confusion[confusion["model"] == model]
         matrix = sub.pivot(index="true_label", columns="pred_label", values="count").reindex(index=[0, 1, 2], columns=[0, 1, 2]).fillna(0)
         values = matrix.to_numpy(dtype=float)
         row_sums = values.sum(axis=1, keepdims=True)
         normalized = values / row_sums.clip(min=1.0)
-        image = ax.imshow(normalized, cmap="Blues", vmin=0.0, vmax=1.0)
-        ax.set_title(model)
+        image = ax.imshow(normalized, cmap="YlGnBu", vmin=0.0, vmax=1.0)
+        ax.set_title(short_names.get(model, model), fontsize=11, fontweight="bold")
         ax.set_xticks([0, 1, 2], [LABELS[idx] for idx in [0, 1, 2]], rotation=35, ha="right")
         ax.set_yticks([0, 1, 2], [LABELS[idx] for idx in [0, 1, 2]])
         ax.set_xlabel("Predicted")
         ax.set_ylabel("True")
         for i in range(3):
             for j in range(3):
-                ax.text(j, i, str(int(values[i, j])), ha="center", va="center", fontsize=8)
+                color = "white" if normalized[i, j] > 0.55 else "#202124"
+                ax.text(
+                    j,
+                    i,
+                    f"{int(values[i, j])}\n{normalized[i, j]:.0%}",
+                    ha="center",
+                    va="center",
+                    fontsize=8.5,
+                    color=color,
+                    fontweight="bold" if values[i, j] else "normal",
+                )
+        ax.tick_params(colors="#202124")
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+        ax.spines["left"].set_color("#817768")
+        ax.spines["bottom"].set_color("#817768")
+    fig.suptitle("Experiment 1 confusion matrices on the real-model test split", fontsize=14, fontweight="bold", x=0.02, ha="left")
     fig.colorbar(image, ax=axes.ravel().tolist(), fraction=0.025, pad=0.02)
     fig.savefig(out_dir / "experiment_1_confusion_matrices.png", dpi=180, bbox_inches="tight")
     plt.close(fig)

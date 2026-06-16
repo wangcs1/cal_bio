@@ -76,9 +76,15 @@ set.
 
 ## Experiment 3
 
+<<<<<<< HEAD
 Real ClinVar variant effect prediction plus small format-control case studies. The
 main variant table includes both trained project models and real external splice tools;
 no proxy/fallback rows are reported.
+=======
+Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
+main artificial-variant table includes both trained project models and real external
+splice-tool rows.
+>>>>>>> 2fa1a6f0c0e7b80a5e169c5f05ddc43f5c3767f8
 
 {markdown_table(exp3)}
 

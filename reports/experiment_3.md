@@ -1,7 +1,7 @@
 # Experiment 3: Aberrant Splicing Variant Effects
 
 This run scores artificial SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).
-External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.
+External tools are executed through a Python 3.10 splice-tool environment and merged as real sequence-level variant scores.
 
 ## Variant Set
 
@@ -19,11 +19,11 @@ External tools are not fallback/proxy rows; they are executed through a Python 3
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7137 |  0.8693 |      46 |         0.1643 |            1.6429 |        460 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.6828 |  0.8503 |      46 |         0.1643 |            1.6429 |        460 |
+| Pangolin real sequence model  | real_external_tool |  0.6853 |  0.8368 |      46 |         0.1643 |            1.6429 |        460 |
 | SpliceAI real sequence model  | real_external_tool |  0.6392 |  0.8271 |      46 |         0.1643 |            1.6429 |        460 |
 | MaxEntScan real local score   | real_external_tool |  0.7268 |  0.789  |      46 |         0.1643 |            1.6429 |        460 |
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.5962 |  0.7695 |      46 |         0.1643 |            1.6429 |        460 |
-| MMSplice real sequence model  | real_external_tool |  0.3333 |  0.6087 |      46 |         0      |            0      |        460 |
-| Pangolin real sequence model  | real_external_tool |  0.5    |  0.6087 |      46 |         0.0857 |            0.8571 |        460 |
+| MMSplice real sequence model  | real_external_tool |  0.6667 |  0.7    |      46 |         0.0964 |            0.9643 |        460 |
 
 ## By Variant Type
 
@@ -38,17 +38,17 @@ External tools are not fallback/proxy rows; they are executed through a Python 3
 | MMSplice real sequence model  | real_external_tool | acceptor_loss   |       0      |         0      |     90 |               1 |
 | MMSplice real sequence model  | real_external_tool | donor_gain      |       0      |         0      |     45 |               1 |
 | MMSplice real sequence model  | real_external_tool | donor_loss      |       0      |         0      |     90 |               1 |
-| MMSplice real sequence model  | real_external_tool | neutral_far_snv |       0.0055 |         0      |    180 |               0 |
+| MMSplice real sequence model  | real_external_tool | neutral_far_snv |      -0.0055 |         0      |    180 |               0 |
 | MaxEntScan real local score   | real_external_tool | acceptor_gain   |      -0.0121 |         0      |     55 |               1 |
 | MaxEntScan real local score   | real_external_tool | acceptor_loss   |       0.2969 |         0      |     90 |               1 |
 | MaxEntScan real local score   | real_external_tool | donor_gain      |      -0      |         0      |     45 |               1 |
 | MaxEntScan real local score   | real_external_tool | donor_loss      |       0.0026 |         0      |     90 |               1 |
 | MaxEntScan real local score   | real_external_tool | neutral_far_snv |       0      |         0      |    180 |               0 |
-| Pangolin real sequence model  | real_external_tool | acceptor_gain   |       0      |         0      |     55 |               1 |
-| Pangolin real sequence model  | real_external_tool | acceptor_loss   |       0      |         0      |     90 |               1 |
-| Pangolin real sequence model  | real_external_tool | donor_gain      |       0      |         0      |     45 |               1 |
-| Pangolin real sequence model  | real_external_tool | donor_loss      |       0      |         0      |     90 |               1 |
-| Pangolin real sequence model  | real_external_tool | neutral_far_snv |       0      |         0      |    180 |               0 |
+| Pangolin real sequence model  | real_external_tool | acceptor_gain   |       0.0007 |         0.0003 |     55 |               1 |
+| Pangolin real sequence model  | real_external_tool | acceptor_loss   |       0.2344 |         0.0831 |     90 |               1 |
+| Pangolin real sequence model  | real_external_tool | donor_gain      |       0.001  |         0.0003 |     45 |               1 |
+| Pangolin real sequence model  | real_external_tool | donor_loss      |       0.6815 |         0.7044 |     90 |               1 |
+| Pangolin real sequence model  | real_external_tool | neutral_far_snv |       0.0078 |         0.0014 |    180 |               0 |
 | RNA-FM frozen encoder + MLP   | trained_classifier | acceptor_gain   |       0.0031 |         0      |     55 |               1 |
 | RNA-FM frozen encoder + MLP   | trained_classifier | acceptor_loss   |       0.0302 |         0.0014 |     90 |               1 |
 | RNA-FM frozen encoder + MLP   | trained_classifier | donor_gain      |       0.0066 |         0      |     45 |               1 |

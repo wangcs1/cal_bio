@@ -104,17 +104,37 @@ def _load_pangolin_models():
 
 
 def pangolin_three_class(sequence: str) -> ToolScore:
-    from pangolin.pangolin import compute_score
-
     seq = sequence.upper().replace("U", "T")
     min_len = 10001
     if len(seq) < min_len:
         left = (min_len - len(seq)) // 2
         right = min_len - len(seq) - left
         seq = "N" * left + seq + "N" * right
-    loss, gain = compute_score(seq, seq, "+", 50, _load_pangolin_models())
-    signal = np.maximum(np.abs(loss), np.abs(gain))
-    donor = float(np.max(signal))
-    acceptor = float(np.mean(np.sort(signal)[-5:])) if len(signal) >= 5 else donor
-    non = float(max(0.0, 1.0 - max(donor, acceptor)))
-    return ToolScore(*_normalize_three(np.array([donor, acceptor, non], dtype=float)))
+    # Pangolin is intrinsically a paired ref/alt scorer. A single sequence scored
+    # against itself has zero delta, so expose only a weak presence-style summary
+    # here and use pangolin_pair_delta for variant effect experiments.
+    return ToolScore(*_normalize_three(np.array([1e-8, 1e-8, 1.0], dtype=float)))
+
+
+def _pad_pair(ref_seq: str, alt_seq: str, min_len: int = 10001) -> tuple[str, str]:
+    ref = ref_seq.upper().replace("U", "T")
+    alt = alt_seq.upper().replace("U", "T")
+    target_len = max(min_len, len(ref), len(alt))
+    left = (target_len - len(ref)) // 2
+    right = target_len - len(ref) - left
+    padded_ref = "N" * left + ref + "N" * right
+    left = (target_len - len(alt)) // 2
+    right = target_len - len(alt) - left
+    padded_alt = "N" * left + alt + "N" * right
+    return padded_ref, padded_alt
+
+
+def pangolin_pair_delta(ref_seq: str, alt_seq: str) -> tuple[float, float, float]:
+    from pangolin.pangolin import compute_score
+
+    ref, alt = _pad_pair(ref_seq, alt_seq)
+    loss, gain = compute_score(ref, alt, "+", 50, _load_pangolin_models())
+    loss_signal = float(np.max(np.maximum(-np.asarray(loss, dtype=float), 0.0)))
+    gain_signal = float(np.max(np.maximum(np.asarray(gain, dtype=float), 0.0)))
+    impact = max(loss_signal, gain_signal)
+    return loss_signal, gain_signal, impact
