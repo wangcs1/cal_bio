@@ -71,15 +71,10 @@ def write_report(
     lines = [
         "# Experiment 3: Aberrant Splicing Variant Effects",
         "",
-<<<<<<< HEAD
         f"Variant table: `{variant_path}`",
         "",
         "This run scores real ClinVar-labeled SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
         "External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.",
-=======
-        "This run scores artificial SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
-        "External tools are executed through a Python 3.10 splice-tool environment and merged as real sequence-level variant scores.",
->>>>>>> 2fa1a6f0c0e7b80a5e169c5f05ddc43f5c3767f8
         "",
         "## Variant Set",
         "",
@@ -540,11 +535,7 @@ def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
         labels = [short_names.get(model, model) for model in order["model"]]
         bars = ax.barh(labels, order[metric], color=[colors.get(model, "#4C78A8") for model in order["model"]], edgecolor="#2f2a24", linewidth=0.45)
         ax.set_xlabel(label)
-<<<<<<< HEAD
-        ax.set_title(f"Experiment 3 real ClinVar variant effect {label}")
-=======
         ax.set_title(f"Experiment 3 artificial variant effect {label}", fontsize=13, fontweight="bold", loc="left")
->>>>>>> 2fa1a6f0c0e7b80a5e169c5f05ddc43f5c3767f8
         ax.set_xlim(0.0, 1.03)
         if metric == "auprc":
             base_rate = 280 / 460

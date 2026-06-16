@@ -10,12 +10,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-<<<<<<< HEAD
-from src.models.external_splice_tools import pangolin_three_class
-=======
 from src.data.build_variant_dataset import build_and_write_variants
 from src.models.external_splice_tools import ToolScore, pangolin_pair_delta
->>>>>>> 2fa1a6f0c0e7b80a5e169c5f05ddc43f5c3767f8
 from src.utils import EXP3_DATA_DIR, ensure_dirs, exp3_data_file, write_dataframe
 
 
