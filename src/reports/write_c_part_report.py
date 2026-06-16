@@ -78,7 +78,7 @@ set.
 
 Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
 main artificial-variant table includes both trained project models and real external
-splice tools; no proxy/fallback rows are reported.
+splice-tool rows.
 
 {markdown_table(exp3)}
 

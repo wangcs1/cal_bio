@@ -72,7 +72,7 @@ def write_report(
         "# Experiment 3: Aberrant Splicing Variant Effects",
         "",
         "This run scores artificial SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
-        "External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.",
+        "External tools are executed through a Python 3.10 splice-tool environment and merged as real sequence-level variant scores.",
         "",
         "## Variant Set",
         "",
@@ -432,58 +432,165 @@ def plot_variant_type_summary(summary: pd.DataFrame, out_dir: Path) -> None:
 
 
 def plot_calibration(scores: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
-    selected = scores[scores["model"] == scores.groupby("model")["impact_score"].mean().idxmax()]
+    metrics = summarize_metrics(scores)
+    selected_model = str(metrics.sort_values("auprc", ascending=False).iloc[0]["model"])
+    selected = scores[scores["model"] == selected_model]
     if selected.empty:
         selected = scores
     model_name = str(selected["model"].iloc[0])
     bins = calibration_bins(selected["label"], selected["impact_score"], bins=8)
     bins.insert(0, "model", model_name)
-    fig, ax = plt.subplots(figsize=(6.5, 4.4))
-    ax.plot(bins["mean_score"], bins["positive_rate"], marker="o", linewidth=2)
-    ax.set_xlabel("Mean impact score bin")
-    ax.set_ylabel("Observed positive rate")
-    ax.set_title(f"Calibration curve ({model_name}, n={len(selected)}, bins={len(bins)})")
-    ax.grid(alpha=0.25)
+    base_rate = float(selected["label"].mean())
+    short_names = {
+        "CNN baseline (PyTorch Conv1D)": "CNN baseline",
+        "RNA-FM frozen encoder + MLP": "RNA-FM frozen",
+        "RNABERT frozen encoder + MLP": "RNABERT frozen",
+        "SpliceAI real sequence model": "SpliceAI real",
+        "Pangolin real sequence model": "Pangolin real",
+        "MMSplice real sequence model": "MMSplice real",
+        "MaxEntScan real local score": "MaxEntScan real",
+    }
+    fig, ax = plt.subplots(figsize=(7.0, 4.8))
+    fig.patch.set_facecolor("#fbf7ef")
+    ax.set_facecolor("#fffdf8")
+    ax.plot(bins["mean_score"], bins["positive_rate"], marker="o", linewidth=2.4, color="#4C78A8")
+    ax.axhline(base_rate, color="#E45756", linestyle="--", linewidth=1.4, label=f"Random baseline = {base_rate:.3f}")
+    ax.set_xlabel("Mean impact score bin (delta score)")
+    ax.set_ylabel("Observed splice-altering rate")
+    ax.set_title(
+        f"Calibration by delta-score bins ({short_names.get(model_name, model_name)})",
+        fontsize=13,
+        fontweight="bold",
+        loc="left",
+    )
+    ax.text(
+        0.02,
+        0.94,
+        f"n={len(selected)}, bins={len(bins)}; scores are current model/tool delta scores, not embedding-distance scores.",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        color="#6b6258",
+        fontsize=8.4,
+        bbox={"facecolor": "#fffdf8", "edgecolor": "none", "alpha": 0.82, "pad": 2.5},
+    )
+    ax.grid(axis="both", color="#d9cfc0", alpha=0.58, linewidth=0.8)
+    for side in ["top", "right"]:
+        ax.spines[side].set_visible(False)
+    ax.spines["left"].set_color("#817768")
+    ax.spines["bottom"].set_color("#817768")
+    ax.legend(frameon=True, fontsize=8, loc="lower right")
     fig.tight_layout()
-    fig.savefig(out_dir / "exp3_calibration_curve.png", dpi=180)
+    fig.savefig(out_dir / "exp3_calibration_curve.png", dpi=220)
     plt.close(fig)
     return bins
 
 
 def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
+    colors = {
+        "CNN baseline (PyTorch Conv1D)": "#4C78A8",
+        "RNA-FM frozen encoder + MLP": "#F58518",
+        "RNABERT frozen encoder + MLP": "#54A24B",
+        "SpliceAI real sequence model": "#B279A2",
+        "Pangolin real sequence model": "#72B7B2",
+        "MMSplice real sequence model": "#E45756",
+        "MaxEntScan real local score": "#9D755D",
+    }
+    short_names = {
+        "CNN baseline (PyTorch Conv1D)": "CNN baseline",
+        "RNA-FM frozen encoder + MLP": "RNA-FM frozen",
+        "RNABERT frozen encoder + MLP": "RNABERT frozen",
+        "SpliceAI real sequence model": "SpliceAI real",
+        "Pangolin real sequence model": "Pangolin real",
+        "MMSplice real sequence model": "MMSplice real",
+        "MaxEntScan real local score": "MaxEntScan real",
+    }
     for metric, filename, label in [
         ("auroc", "exp3_variant_auroc.png", "AUROC"),
         ("auprc", "exp3_variant_auprc.png", "AUPRC"),
     ]:
-        fig, ax = plt.subplots(figsize=(8.2, 4.8))
+        fig, ax = plt.subplots(figsize=(8.6, 5.1))
+        fig.patch.set_facecolor("#fbf7ef")
+        ax.set_facecolor("#fffdf8")
         order = metrics.sort_values(metric)
-        ax.barh(order["model"], order[metric], color="#4f7cac")
+        labels = [short_names.get(model, model) for model in order["model"]]
+        bars = ax.barh(labels, order[metric], color=[colors.get(model, "#4C78A8") for model in order["model"]], edgecolor="#2f2a24", linewidth=0.45)
         ax.set_xlabel(label)
-        ax.set_title(f"Experiment 3 artificial variant effect {label}")
+        ax.set_title(f"Experiment 3 artificial variant effect {label}", fontsize=13, fontweight="bold", loc="left")
         ax.set_xlim(0.0, 1.03)
-        ax.grid(axis="x", alpha=0.25)
+        if metric == "auprc":
+            base_rate = 280 / 460
+            ax.axvline(base_rate, color="#E45756", linestyle="--", linewidth=1.4, label=f"Random baseline = {base_rate:.3f}")
+            ax.legend(frameon=True, fontsize=8, loc="lower right")
+        elif metric == "auroc":
+            ax.axvline(0.5, color="#E45756", linestyle="--", linewidth=1.4, label="Random baseline = 0.500")
+            ax.legend(frameon=True, fontsize=8, loc="lower right")
+        for bar, value in zip(bars, order[metric]):
+            ax.text(float(value) + 0.012, bar.get_y() + bar.get_height() / 2, f"{float(value):.3f}", va="center", fontsize=8.5, color="#202124")
+        ax.grid(axis="x", color="#d9cfc0", alpha=0.58, linewidth=0.8)
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+        ax.spines["left"].set_color("#817768")
+        ax.spines["bottom"].set_color("#817768")
         fig.tight_layout()
-        fig.savefig(out_dir / filename, dpi=180)
+        fig.savefig(out_dir / filename, dpi=220)
         plt.close(fig)
 
 
 def plot_delta_boxplot(scores: pd.DataFrame, out_dir: Path) -> None:
-    selected_models = scores["model"].drop_duplicates().tolist()
+    preferred = [
+        "CNN baseline (PyTorch Conv1D)",
+        "RNA-FM frozen encoder + MLP",
+        "RNABERT frozen encoder + MLP",
+        "SpliceAI real sequence model",
+        "Pangolin real sequence model",
+        "MMSplice real sequence model",
+        "MaxEntScan real local score",
+    ]
+    available = scores["model"].drop_duplicates().tolist()
+    selected_models = [model for model in preferred if model in available]
+    selected_models.extend([model for model in available if model not in selected_models])
     subset = scores[scores["model"].isin(selected_models)].copy()
-    fig, axes = plt.subplots(1, len(selected_models), figsize=(14, 4.4), sharey=True)
+    short_names = {
+        "CNN baseline (PyTorch Conv1D)": "CNN\nbaseline",
+        "RNA-FM frozen encoder + MLP": "RNA-FM\nfrozen",
+        "RNABERT frozen encoder + MLP": "RNABERT\nfrozen",
+        "SpliceAI real sequence model": "SpliceAI\nreal",
+        "Pangolin real sequence model": "Pangolin\nreal",
+        "MMSplice real sequence model": "MMSplice\nreal",
+        "MaxEntScan real local score": "MaxEntScan\nreal",
+    }
+    colors = ["#d8e8f5", "#fae1bd"]
+    fig, axes = plt.subplots(1, len(selected_models), figsize=(2.35 * len(selected_models), 4.8), sharey=True)
+    fig.patch.set_facecolor("#fbf7ef")
+    if len(selected_models) == 1:
+        axes = [axes]
     for ax, model in zip(axes, selected_models):
+        ax.set_facecolor("#fffdf8")
         group = subset[subset["model"] == model]
         values = [
             group[group["label"] == 0]["impact_score"].to_numpy(),
             group[group["label"] == 1]["impact_score"].to_numpy(),
         ]
-        ax.boxplot(values, labels=["neutral", "splice altering"], showfliers=False)
-        ax.set_title(model, fontsize=9)
-        ax.grid(axis="y", alpha=0.25)
+        boxes = ax.boxplot(values, labels=["neutral", "splice\naltering"], showfliers=False, patch_artist=True, widths=0.58)
+        for patch, color in zip(boxes["boxes"], colors):
+            patch.set_facecolor(color)
+            patch.set_edgecolor("#2f2a24")
+            patch.set_alpha(0.95)
+        for median in boxes["medians"]:
+            median.set_color("#202124")
+            median.set_linewidth(1.4)
+        ax.set_title(short_names.get(model, model), fontsize=9.5, fontweight="bold")
+        ax.grid(axis="y", color="#d9cfc0", alpha=0.58, linewidth=0.8)
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+        ax.spines["left"].set_color("#817768")
+        ax.spines["bottom"].set_color("#817768")
+        ax.tick_params(axis="x", labelsize=8)
     axes[0].set_ylabel("Impact score")
-    fig.suptitle("Experiment 3 delta score distribution")
+    fig.suptitle("Experiment 3 delta score distribution by current real model/tool", fontsize=14, fontweight="bold", x=0.02, ha="left")
     fig.tight_layout()
-    fig.savefig(out_dir / "exp3_delta_score_boxplot.png", dpi=180)
+    fig.savefig(out_dir / "exp3_delta_score_boxplot.png", dpi=220)
     plt.close(fig)
 
 

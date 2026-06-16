@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.build_variant_dataset import build_and_write_variants
-from src.models.external_splice_tools import pangolin_three_class
+from src.models.external_splice_tools import ToolScore, pangolin_pair_delta
 from src.utils import EXP3_DATA_DIR, ensure_dirs, exp3_data_file, write_dataframe
 
 
@@ -25,15 +25,16 @@ def _target_attr(row: pd.Series) -> str:
 def score_variants(variants: pd.DataFrame) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for _, row in variants.iterrows():
-        wt = pangolin_three_class(str(row["wt_sequence"]))
-        mut = pangolin_three_class(str(row["mut_sequence"]))
         target = _target_attr(row)
+        loss_signal, gain_signal, impact = pangolin_pair_delta(str(row["wt_sequence"]), str(row["mut_sequence"]))
         if str(row["variant_type"]).endswith("loss"):
-            delta = float(getattr(wt, target) - getattr(mut, target))
+            delta = loss_signal
         elif "gain" in str(row["variant_type"]):
-            delta = float(getattr(mut, target) - getattr(wt, target))
+            delta = gain_signal
         else:
-            delta = float(max(abs(mut.donor - wt.donor), abs(mut.acceptor - wt.acceptor)))
+            delta = impact
+        wt = ToolScore(donor=0.0, acceptor=0.0, non_splice=1.0)
+        mut = ToolScore(donor=gain_signal, acceptor=loss_signal, non_splice=max(0.0, 1.0 - impact))
         rows.append(
             {
                 "variant_id": row["variant_id"],

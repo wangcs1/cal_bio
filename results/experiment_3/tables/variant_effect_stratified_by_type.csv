@@ -1,34 +1,34 @@
 model,source,variant_type,mean_score,median_score,rows,positive_rate
-CNN baseline (PyTorch Conv1D),trained_classifier,acceptor_gain,-0.0004281738942319697,-0.00020063668489456177,55,1.0
-CNN baseline (PyTorch Conv1D),trained_classifier,acceptor_loss,0.24356643557548524,0.23956193029880524,90,1.0
-CNN baseline (PyTorch Conv1D),trained_classifier,donor_gain,-0.0003571432497766283,1.0233372449874878e-05,45,1.0
-CNN baseline (PyTorch Conv1D),trained_classifier,donor_loss,0.11680732303195529,0.1158122718334198,90,1.0
-CNN baseline (PyTorch Conv1D),trained_classifier,neutral_far_snv,0.0007648376334044669,0.00039355456829071045,180,0.0
+CNN baseline (PyTorch Conv1D),trained_classifier,acceptor_gain,-0.00042817389423195856,-0.0002006366848945,55,1.0
+CNN baseline (PyTorch Conv1D),trained_classifier,acceptor_loss,0.24356643557548524,0.2395619302988052,90,1.0
+CNN baseline (PyTorch Conv1D),trained_classifier,donor_gain,-0.0003571432497766272,1.0233372449874878e-05,45,1.0
+CNN baseline (PyTorch Conv1D),trained_classifier,donor_loss,0.11680732303195526,0.11581227183341974,90,1.0
+CNN baseline (PyTorch Conv1D),trained_classifier,neutral_far_snv,0.0007648376334044218,0.00039355456829065,180,0.0
 MMSplice real sequence model,real_external_tool,acceptor_gain,0.0,0.0,55,1.0
 MMSplice real sequence model,real_external_tool,acceptor_loss,0.0,0.0,90,1.0
 MMSplice real sequence model,real_external_tool,donor_gain,0.0,0.0,45,1.0
 MMSplice real sequence model,real_external_tool,donor_loss,0.0,0.0,90,1.0
-MMSplice real sequence model,real_external_tool,neutral_far_snv,0.005484205148288439,0.0,180,0.0
+MMSplice real sequence model,real_external_tool,neutral_far_snv,-0.005484205148288439,0.0,180,0.0
 MaxEntScan real local score,real_external_tool,acceptor_gain,-0.012121211938229414,0.0,55,1.0
 MaxEntScan real local score,real_external_tool,acceptor_loss,0.29693126085136934,0.0,90,1.0
 MaxEntScan real local score,real_external_tool,donor_gain,-5.310358774623498e-11,0.0,45,1.0
 MaxEntScan real local score,real_external_tool,donor_loss,0.0025809550598727207,5.631136335004783e-09,90,1.0
 MaxEntScan real local score,real_external_tool,neutral_far_snv,0.0,0.0,180,0.0
-Pangolin real sequence model,real_external_tool,acceptor_gain,0.0,0.0,55,1.0
-Pangolin real sequence model,real_external_tool,acceptor_loss,0.0,0.0,90,1.0
-Pangolin real sequence model,real_external_tool,donor_gain,0.0,0.0,45,1.0
-Pangolin real sequence model,real_external_tool,donor_loss,0.0,0.0,90,1.0
-Pangolin real sequence model,real_external_tool,neutral_far_snv,0.0,0.0,180,0.0
-RNA-FM frozen encoder + MLP,trained_classifier,acceptor_gain,0.003110594694893356,4.275557268033186e-09,55,1.0
-RNA-FM frozen encoder + MLP,trained_classifier,acceptor_loss,0.030242787885945473,0.0013922543997789694,90,1.0
-RNA-FM frozen encoder + MLP,trained_classifier,donor_gain,0.006561878539935112,1.8018593235635348e-06,45,1.0
-RNA-FM frozen encoder + MLP,trained_classifier,donor_loss,0.3745169150827567,0.31797455535107055,90,1.0
-RNA-FM frozen encoder + MLP,trained_classifier,neutral_far_snv,0.0069835262201886515,0.00015105625803363276,180,0.0
-RNABERT frozen encoder + MLP,trained_classifier,acceptor_gain,-0.0011628778803941327,-1.0142934071891705e-06,55,1.0
-RNABERT frozen encoder + MLP,trained_classifier,acceptor_loss,0.09613246677357495,0.019946751859300782,90,1.0
-RNABERT frozen encoder + MLP,trained_classifier,donor_gain,0.0013632485049257443,2.1138349865467236e-07,45,1.0
+Pangolin real sequence model,real_external_tool,acceptor_gain,0.0007259104527623267,0.0002952218055725,55,1.0
+Pangolin real sequence model,real_external_tool,acceptor_loss,0.2344483227404352,0.08309425413608545,90,1.0
+Pangolin real sequence model,real_external_tool,donor_gain,0.000964895034283236,0.0003390783967915,45,1.0
+Pangolin real sequence model,real_external_tool,donor_loss,0.6815032475524478,0.7043919563293457,90,1.0
+Pangolin real sequence model,real_external_tool,neutral_far_snv,0.007833223487856786,0.0014339070767164,180,0.0
+RNA-FM frozen encoder + MLP,trained_classifier,acceptor_gain,0.003110594694893355,4.275557268033186e-09,55,1.0
+RNA-FM frozen encoder + MLP,trained_classifier,acceptor_loss,0.03024278788594544,0.0013922543997789,90,1.0
+RNA-FM frozen encoder + MLP,trained_classifier,donor_gain,0.006561878539935109,1.8018593235635348e-06,45,1.0
+RNA-FM frozen encoder + MLP,trained_classifier,donor_loss,0.3745169150827566,0.31797455535107055,90,1.0
+RNA-FM frozen encoder + MLP,trained_classifier,neutral_far_snv,0.006983526220188625,0.00015105625803354998,180,0.0
+RNABERT frozen encoder + MLP,trained_classifier,acceptor_gain,-0.0011628778803941331,-1.0142934071891705e-06,55,1.0
+RNABERT frozen encoder + MLP,trained_classifier,acceptor_loss,0.09613246677357491,0.0199467518593007,90,1.0
+RNABERT frozen encoder + MLP,trained_classifier,donor_gain,0.0013632485049257371,2.1138349865467241e-07,45,1.0
 RNABERT frozen encoder + MLP,trained_classifier,donor_loss,0.46189976230815927,0.4536261043441801,90,1.0
-RNABERT frozen encoder + MLP,trained_classifier,neutral_far_snv,0.0010392510581579445,4.7134405767090826e-05,180,0.0
+RNABERT frozen encoder + MLP,trained_classifier,neutral_far_snv,0.0010392510581579255,4.7134405767090826e-05,180,0.0
 SpliceAI real sequence model,real_external_tool,acceptor_gain,1.8281194726934403e-05,-6.685421728313885e-06,55,1.0
 SpliceAI real sequence model,real_external_tool,acceptor_loss,0.3073849544084478,0.1483988541712537,90,1.0
 SpliceAI real sequence model,real_external_tool,donor_gain,0.00014929651726464124,-4.178647769230555e-06,45,1.0

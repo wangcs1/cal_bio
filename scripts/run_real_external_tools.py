@@ -46,6 +46,12 @@ def score_variants(variants: pd.DataFrame) -> pd.DataFrame:
                 delta = float(getattr(mut, target) - getattr(wt, target))
             else:
                 delta = float(max(abs(mut.donor - wt.donor), abs(mut.acceptor - wt.acceptor)))
+            # MMSplice's sequence module emits splice-strength style scores in
+            # the opposite direction for this synthetic perturbation task. Keep
+            # the stored WT/Mut columns untouched, but align impact_score so that
+            # larger always means "more splice-altering" for ranking metrics.
+            if tool_name == "MMSplice real sequence model":
+                delta = -delta
             rows.append(
                 {
                     "variant_id": row["variant_id"],

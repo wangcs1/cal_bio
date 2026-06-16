@@ -1,6 +1,6 @@
 # C Part Combined Report
 
-Generated: 2026-06-17 00:59:03
+Generated: 2026-06-17 02:17:40
 
 ## Scope
 
@@ -53,17 +53,17 @@ set.
 
 Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
 main artificial-variant table includes both trained project models and real external
-splice tools; no proxy/fallback rows are reported.
+splice-tool rows.
 
 | model                         | source             |   auroc |   auprc |   top_k |   top_k_recall |   enrichment_at_k |   variants |
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7137 |  0.8693 |      46 |         0.1643 |            1.6429 |        460 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.6828 |  0.8503 |      46 |         0.1643 |            1.6429 |        460 |
+| Pangolin real sequence model  | real_external_tool |  0.6853 |  0.8368 |      46 |         0.1643 |            1.6429 |        460 |
 | SpliceAI real sequence model  | real_external_tool |  0.6392 |  0.8271 |      46 |         0.1643 |            1.6429 |        460 |
 | MaxEntScan real local score   | real_external_tool |  0.7268 |  0.789  |      46 |         0.1643 |            1.6429 |        460 |
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.5962 |  0.7695 |      46 |         0.1643 |            1.6429 |        460 |
-| MMSplice real sequence model  | real_external_tool |  0.3333 |  0.6087 |      46 |         0      |            0      |        460 |
-| Pangolin real sequence model  | real_external_tool |  0.5    |  0.6087 |      46 |         0.0857 |            0.8571 |        460 |
+| MMSplice real sequence model  | real_external_tool |  0.6667 |  0.7    |      46 |         0.0964 |            0.9643 |        460 |
 
 ## Reports
 
