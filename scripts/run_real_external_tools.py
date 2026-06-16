@@ -10,7 +10,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.build_variant_dataset import build_and_write_variants
 from src.models.external_splice_tools import (
     maxentscan_three_class,
     mmsplice_three_class,
@@ -70,13 +69,16 @@ def score_variants(variants: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run real external splice tools on synthetic variants.")
-    parser.add_argument("--variants", type=Path, default=exp3_data_file("artificial_variant_effect.csv"))
+    parser = argparse.ArgumentParser(description="Run real external splice tools on real ClinVar variant windows.")
+    parser.add_argument("--variants", type=Path, default=exp3_data_file("clinvar_splicing_variants.csv"))
     parser.add_argument("--out", type=Path, default=EXP3_DATA_DIR / "external_tools")
     args = parser.parse_args()
     ensure_dirs(args.out)
     if not args.variants.exists():
-        build_and_write_variants()
+        raise FileNotFoundError(
+            f"Variant table not found: {args.variants}. "
+            "Build it with python -m src.data.build_clinvar_variant_dataset."
+        )
     variants = pd.read_csv(args.variants)
     variants["target_class_name"] = variants["target_class_name"].astype(str)
     scored = score_variants(variants)

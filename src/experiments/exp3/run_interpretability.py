@@ -14,15 +14,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.data.build_clinvar_variant_dataset import build_clinvar_smoke
-from src.data.build_synthetic_splice_dataset import build_and_write
-from src.data.build_variant_dataset import build_and_write_variants
+from src.data.build_clinvar_variant_dataset import build_clinvar_smoke, build_clinvar_variants
+from src.data.build_splice_site_dataset import build_and_write_real
 from src.experiments.exp3.run_variant_effect import saturation_matrix, train_models
 from src.utils import (
     BASES,
     EXP2_FIGURES_DIR,
     EXP2_TABLES_DIR,
-    EXP3_DATA_DIR,
     EXP3_FIGURES_DIR,
     EXP3_TABLES_DIR,
     PROJECT_ROOT,
@@ -37,9 +35,9 @@ from src.utils import (
 
 def ensure_inputs() -> None:
     if not shared_split_file("test_pm200.csv").exists():
-        build_and_write()
-    if not exp3_data_file("artificial_variant_effect.csv").exists():
-        build_and_write_variants()
+        build_and_write_real()
+    if not exp3_data_file("clinvar_splicing_variants.csv").exists():
+        build_clinvar_variants()
 
 
 def plot_matrix(matrix: pd.DataFrame, out_path: Path, title: str) -> None:
@@ -119,30 +117,18 @@ def plot_delta_profile(variant: pd.Series, out_path: Path, title: str) -> pd.Dat
 
 
 def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
-    variants = read_csv(exp3_data_file("artificial_variant_effect.csv"))
-    donor_loss = variants[variants["variant_type"] == "donor_loss"].iloc[0]
-    donor_gain_frame = variants[variants["variant_type"] == "donor_gain"]
-    acceptor_gain_frame = variants[variants["variant_type"] == "acceptor_gain"]
-    donor_profile = plot_delta_profile(
-        donor_loss,
-        out_figures / "variant_delta_profile_donor_loss.png",
-        "WT vs Mut delta profile: donor loss",
+    variants = read_csv(exp3_data_file("clinvar_splicing_variants.csv"))
+    positives = variants[variants["label"].astype(int) == 1]
+    if positives.empty:
+        raise ValueError("ClinVar interpretability requires at least one splice-altering positive variant.")
+    case = positives.iloc[0]
+    target_name = str(case.get("target_class_name", "splice"))
+    profile = plot_delta_profile(
+        case,
+        out_figures / "variant_delta_profile_clinvar_real_case.png",
+        f"WT vs Mut delta profile: real ClinVar {target_name} case",
     )
-    write_dataframe(out_tables / "variant_delta_profile_donor_loss.csv", donor_profile)
-    if not donor_gain_frame.empty:
-        donor_gain_profile = plot_delta_profile(
-            donor_gain_frame.iloc[0],
-            out_figures / "variant_delta_profile_donor_gain.png",
-            "WT vs Mut delta profile: donor gain",
-        )
-        write_dataframe(out_tables / "variant_delta_profile_donor_gain.csv", donor_gain_profile)
-    if not acceptor_gain_frame.empty:
-        acceptor_gain_profile = plot_delta_profile(
-            acceptor_gain_frame.iloc[0],
-            out_figures / "variant_delta_profile_acceptor_gain.png",
-            "WT vs Mut delta profile: acceptor gain",
-        )
-        write_dataframe(out_tables / "variant_delta_profile_acceptor_gain.csv", acceptor_gain_profile)
+    write_dataframe(out_tables / "variant_delta_profile_clinvar_real_case.csv", profile)
 
 
 def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 
-from src.data.build_synthetic_splice_dataset import build_and_write
-from src.data.build_variant_dataset import build_and_write_variants
+from src.data.build_clinvar_variant_dataset import build_clinvar_variants
+from src.data.build_splice_site_dataset import build_and_write_real
 from src.data.qc_splice_dataset import build_qc_report
 from src.experiments.exp1.run_classification import run as run_exp1
 from src.experiments.exp2.run_multiscale import run as run_exp2
@@ -18,8 +18,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the full C-part real-model experiment pipeline.")
     parser.parse_args()
 
-    print("[1/9] Building synthetic splice-site benchmark")
-    build_and_write()
+    print("[1/9] Building real GENCODE/GRCh38 splice-site benchmark")
+    build_and_write_real()
     print("[2/9] Running experiment 1")
     run_exp1(
         data_dir=None,
@@ -35,8 +35,8 @@ def main() -> None:
     )
     print("[3/9] Running experiment 2")
     run_exp2(EXP2_TABLES_DIR, EXP2_FIGURES_DIR, random_state=42)
-    print("[4/9] Building artificial variant dataset")
-    build_and_write_variants()
+    print("[4/9] Building real ClinVar variant dataset")
+    build_clinvar_variants()
     print("[5/9] Running experiment 3")
     run_exp3(EXP3_TABLES_DIR, EXP3_FIGURES_DIR, random_state=42)
     print("[6/9] Running interpretability analyses")

@@ -38,8 +38,8 @@ def write_report(root: Path = PROJECT_ROOT) -> Path:
 
     exp1 = load_or_empty(EXP1_TABLES_DIR / "experiment_1_metrics.csv")
     exp2 = load_or_empty(EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv")
-    exp3 = load_or_empty(EXP3_TABLES_DIR / "experiment_3A_artificial_variant_metrics.csv")
-    variants = load_or_empty(EXP3_DATA_DIR / "artificial_variant_effect_summary.csv")
+    exp3 = load_or_empty(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
+    variants = load_or_empty(EXP3_DATA_DIR / "clinvar_splicing_variants_summary.csv")
 
     text = f"""# C Part Combined Report
 
@@ -48,16 +48,16 @@ Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 ## Scope
 
 The main C Part pipeline uses the current small split, not a million-scale full dataset.
-Default split size is train/valid/test = 855/120/285 when the synthetic builder is run with
-the repository defaults. This run reports real-model rows only. Experiments 1 and 2 use
-CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
+Experiments 1 and 2 use a real GENCODE/GRCh38 chromosome-holdout split with balanced
+donor/acceptor/non-splice classes. This run reports real-model rows only. Experiments 1
+and 2 use CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
 includes real external splice tools: SpliceAI, Pangolin, MMSplice, and MaxEntScan.
 
 ## Data
 
 {markdown_table(split_frame)}
 
-Artificial variant summary:
+Real ClinVar variant summary:
 
 {markdown_table(variants)}
 
@@ -76,9 +76,9 @@ set.
 
 ## Experiment 3
 
-Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
-main artificial-variant table includes both trained project models and real external
-splice tools; no proxy/fallback rows are reported.
+Real ClinVar variant effect prediction plus small format-control case studies. The
+main variant table includes both trained project models and real external splice tools;
+no proxy/fallback rows are reported.
 
 {markdown_table(exp3)}
 

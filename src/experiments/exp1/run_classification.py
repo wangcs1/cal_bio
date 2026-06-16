@@ -64,7 +64,7 @@ def write_report(path: Path, data_dir: Path, train_summary: pd.DataFrame, test_m
         "",
         f"Data directory: `{data_dir}`",
         "",
-        "The main result uses the small split train/valid/test = 855/120/285.",
+        "The main result uses the current real chromosome-holdout small split, with row caps applied by configuration.",
         "RNA-FM/RNABERT rows require real local frozen encoder weights under `models/hf/`.",
         "Only real-model rows are reported in this run.",
         "",

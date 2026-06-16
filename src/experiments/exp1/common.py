@@ -6,7 +6,6 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from src.data.build_synthetic_splice_dataset import build_and_write
 from src.utils import PROJECT_ROOT, REQUIRED_SPLIT_COLUMNS, SHARED_SPLIT_DIR, ensure_dirs, validate_split_frame
 
 
@@ -30,15 +29,17 @@ def resolve_data_dir(data_dir: Path | None = None) -> Path:
 
 
 def split_path(data_dir: Path, split: str) -> Path:
-    if not data_dir.exists() or not (data_dir / "train.csv").exists():
-        build_and_write()
     direct = data_dir / f"{split}.csv"
     if direct.exists():
         return direct
     pm200 = data_dir / f"{split}_pm200.csv"
     if pm200.exists():
         return pm200
-    raise FileNotFoundError(f"Could not find {split}.csv or {split}_pm200.csv in {data_dir}")
+    raise FileNotFoundError(
+        f"Could not find {split}.csv or {split}_pm200.csv in {data_dir}. "
+        "Build the real benchmark first with: "
+        "python -m src.data.build_splice_site_dataset --max-per-class 1000 --windows 50 100 200 400"
+    )
 
 
 def load_split(data_dir: Path, split: str, max_rows: int | None, seed: int) -> pd.DataFrame:

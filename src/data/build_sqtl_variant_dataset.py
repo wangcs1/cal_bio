@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.build_variant_dataset import build_and_write_variants
+from src.data.build_clinvar_variant_dataset import build_clinvar_variants
 from src.utils import EXP3_DATA_DIR, exp3_data_file, read_csv, write_dataframe
 
 
 def build_sqtl_smoke(output: Path = EXP3_DATA_DIR / "gtex_sqtl_variants_smoke.csv", rows: int = 10) -> pd.DataFrame:
-    if not exp3_data_file("artificial_variant_effect.csv").exists():
-        build_and_write_variants()
-    variants = read_csv(exp3_data_file("artificial_variant_effect.csv")).head(rows).copy()
+    if not exp3_data_file("clinvar_splicing_variants.csv").exists():
+        build_clinvar_variants()
+    variants = read_csv(exp3_data_file("clinvar_splicing_variants.csv")).head(rows).copy()
     tissues = ["brain", "heart", "liver", "muscle", "blood"]
     payload = []
     for idx, variant in variants.iterrows():
@@ -28,7 +28,7 @@ def build_sqtl_smoke(output: Path = EXP3_DATA_DIR / "gtex_sqtl_variants_smoke.cs
                 "variant_type": variant["variant_type"],
                 "wt_sequence": variant["wt_sequence"],
                 "mut_sequence": variant["mut_sequence"],
-                "data_source": "gtex_sqtl_format_smoke_from_artificial_variants",
+                "data_source": "gtex_sqtl_format_control_from_real_clinvar_variants",
             }
         )
     frame = pd.DataFrame(payload)

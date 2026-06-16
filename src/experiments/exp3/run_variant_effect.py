@@ -16,10 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.data.build_clinvar_variant_dataset import build_clinvar_smoke
-from src.data.build_synthetic_splice_dataset import build_and_write
+from src.data.build_clinvar_variant_dataset import build_clinvar_smoke, build_clinvar_variants
+from src.data.build_splice_site_dataset import build_and_write_real
 from src.data.build_sqtl_variant_dataset import build_sqtl_smoke
-from src.data.build_variant_dataset import build_and_write_variants
 from src.experiments.exp1.common import make_model
 from src.utils import (
     BASES,
@@ -34,7 +33,6 @@ from src.utils import (
     load_config,
     mutate_base,
     read_csv,
-    exp3_data_file,
     shared_split_file,
     topk_enrichment_curve,
     write_dataframe,
@@ -61,8 +59,10 @@ def markdown_table(frame: pd.DataFrame, columns: list[str] | None = None, max_ro
 
 def write_report(
     path: Path,
+    variant_path: Path,
     variant_counts: pd.DataFrame,
     metrics: pd.DataFrame,
+    matched_metrics: pd.DataFrame,
     variant_summary: pd.DataFrame,
     clinvar: pd.DataFrame,
     sqtl: pd.DataFrame,
@@ -71,16 +71,24 @@ def write_report(
     lines = [
         "# Experiment 3: Aberrant Splicing Variant Effects",
         "",
-        "This run scores artificial SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
+        f"Variant table: `{variant_path}`",
+        "",
+        "This run scores real ClinVar-labeled SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
         "External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.",
         "",
         "## Variant Set",
         "",
         markdown_table(variant_counts, ["variant_type", "label_name", "rows"]),
         "",
-        "## 3A Artificial Variant Ranking",
+        "## 3A Real ClinVar Variant Ranking",
         "",
         markdown_table(metrics, ["model", "source", "auroc", "auprc", "top_k", "top_k_recall", "enrichment_at_k", "variants"]),
+        "",
+        "## 3B Distance-Matched ClinVar Ranking",
+        "",
+        "This diagnostic evaluates the same scores on an exact-distance-matched ClinVar subset to reduce the `closer to splice site = more likely pathogenic` shortcut.",
+        "",
+        markdown_table(matched_metrics, ["model", "source", "auroc", "auprc", "top_k", "top_k_recall", "enrichment_at_k", "variants"]),
         "",
         "## By Variant Type",
         "",
@@ -88,8 +96,7 @@ def write_report(
         "",
         "## Smoke Inputs",
         "",
-        "ClinVar-format and sQTL-format smoke tables are derived from the artificial variant set to validate input/output plumbing.",
-        "They are not full ClinVar or GTEx benchmarks.",
+        "The ClinVar smoke table is a small real-data subset for plumbing checks. The sQTL table is a format-control case study unless a real GTEx table is supplied.",
         "",
         "ClinVar-format smoke metrics:",
         "",
@@ -99,8 +106,8 @@ def write_report(
         "",
         "Outputs:",
         "",
-        "- `results/experiment_3/tables/experiment_3A_artificial_variant_scores.csv`",
-        "- `results/experiment_3/tables/experiment_3A_artificial_variant_metrics.csv`",
+        "- `results/experiment_3/tables/experiment_3A_variant_scores.csv`",
+        "- `results/experiment_3/tables/experiment_3A_variant_metrics.csv`",
         "- `results/experiment_3/tables/variant_effect_stratified_by_type.csv`",
         "- `results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`",
         "- `results/experiment_3/tables/experiment_3C_sqtl_case_study.csv`",
@@ -110,11 +117,11 @@ def write_report(
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def ensure_inputs() -> None:
+def ensure_inputs(variant_path: Path) -> None:
     if not shared_split_file("train_pm200.csv").exists():
-        build_and_write()
-    if not exp3_data_file("artificial_variant_effect.csv").exists():
-        build_and_write_variants()
+        build_and_write_real()
+    if not variant_path.exists():
+        build_clinvar_variants(output_path=variant_path)
 
 
 def train_models(random_state: int) -> list[object]:
@@ -238,6 +245,18 @@ def summarize_metrics(scores: pd.DataFrame) -> pd.DataFrame:
         source = str(group["source"].iloc[0]) if "source" in group.columns else "unknown"
         rows.append({"model": model, "source": source, **metrics, "variants": len(group)})
     return pd.DataFrame(rows).sort_values("auprc", ascending=False)
+
+
+def summarize_distance_matched_metrics(scores: pd.DataFrame) -> pd.DataFrame:
+    matched_path = EXP3_DATA_DIR / "clinvar_splicing_variants_distance_matched.csv"
+    if not matched_path.exists():
+        return pd.DataFrame()
+    matched = read_csv(matched_path)
+    keep_ids = set(matched["variant_id"].astype(str))
+    subset = scores[scores["variant_id"].astype(str).isin(keep_ids)].copy()
+    if subset.empty:
+        return pd.DataFrame()
+    return summarize_metrics(subset)
 
 
 def summarize_topk(scores: pd.DataFrame) -> pd.DataFrame:
@@ -459,7 +478,7 @@ def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
         order = metrics.sort_values(metric)
         ax.barh(order["model"], order[metric], color="#4f7cac")
         ax.set_xlabel(label)
-        ax.set_title(f"Experiment 3 artificial variant effect {label}")
+        ax.set_title(f"Experiment 3 real ClinVar variant effect {label}")
         ax.set_xlim(0.0, 1.03)
         ax.grid(axis="x", alpha=0.25)
         fig.tight_layout()
@@ -541,20 +560,28 @@ def run_saturation(models: list[object], out_tables: Path, out_figures: Path) ->
     )
 
 
-def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> dict[str, pd.DataFrame]:
+def run(
+    output_tables: Path,
+    output_figures: Path,
+    random_state: int = 42,
+    variant_path: Path = EXP3_DATA_DIR / "clinvar_splicing_variants.csv",
+) -> dict[str, pd.DataFrame]:
     ensure_dirs(output_tables, output_figures)
-    ensure_inputs()
-    variants = read_csv(exp3_data_file("artificial_variant_effect.csv"))
+    ensure_inputs(variant_path)
+    variants = read_csv(variant_path)
     models = train_models(random_state=random_state)
     classifier_scores = score_variants(models, variants)
-    external_scores = run_external_tool_scores(exp3_data_file("artificial_variant_effect.csv"))
+    external_scores = run_external_tool_scores(variant_path)
     scores = pd.concat([classifier_scores, external_scores], ignore_index=True, sort=False)
     metrics = summarize_metrics(scores)
+    matched_metrics = summarize_distance_matched_metrics(scores)
     topk = summarize_topk(scores)
     variant_summary = summarize_variant_types(scores)
     calibration = plot_calibration(scores, output_figures)
-    write_dataframe(output_tables / "experiment_3A_artificial_variant_scores.csv", scores)
-    write_dataframe(output_tables / "experiment_3A_artificial_variant_metrics.csv", metrics)
+    write_dataframe(output_tables / "experiment_3A_variant_scores.csv", scores)
+    write_dataframe(output_tables / "experiment_3A_variant_metrics.csv", metrics)
+    if not matched_metrics.empty:
+        write_dataframe(output_tables / "experiment_3A_distance_matched_variant_metrics.csv", matched_metrics)
     write_dataframe(output_tables / "experiment_3A_topk_enrichment_curve.csv", topk)
     write_dataframe(output_tables / "variant_effect_stratified_by_type.csv", variant_summary)
     write_dataframe(output_tables / "experiment_3A_calibration_bins.csv", calibration)
@@ -570,7 +597,7 @@ def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> di
         .rename(columns={"size": "rows"})
         .sort_values("variant_type")
     )
-    write_report(PROJECT_ROOT / "reports/experiment_3.md", variant_counts, metrics, variant_summary, clinvar, sqtl)
+    write_report(PROJECT_ROOT / "reports/experiment_3.md", variant_path, variant_counts, metrics, matched_metrics, variant_summary, clinvar, sqtl)
     return {
         "scores": scores,
         "metrics": metrics,
@@ -615,7 +642,7 @@ def run_sqtl_case_study(output_tables: Path, models: list[object]) -> pd.DataFra
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run C-part experiment 3: artificial splice variant effects.")
+    parser = argparse.ArgumentParser(description="Run C-part experiment 3: real ClinVar splice variant effects.")
     parser.add_argument("--config", type=Path, default=CONFIG_ROOT / "exp3_variant_effect.yaml")
     parser.add_argument("--tables", type=Path, default=EXP3_TABLES_DIR)
     parser.add_argument("--figures", type=Path, default=EXP3_FIGURES_DIR)
@@ -626,10 +653,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config = load_config(args.config) if args.config else {}
+    variant_path = Path(config.get("variant_table", EXP3_DATA_DIR / "clinvar_splicing_variants.csv"))
     outputs = run(
         Path(config.get("tables_dir", args.tables)),
         Path(config.get("figures_dir", args.figures)),
         int(config.get("seed", args.seed)),
+        variant_path=variant_path,
     )
     print(outputs["metrics"].to_string(index=False))
 

@@ -1,338 +1,335 @@
-﻿# TODO
+# TODO: Real-Data Benchmark Revision Plan
 
-本项目后续实验**不使用百万级完整数据集**。所有主实验默认基于当前小样本 split：
+项目定位已从“合成/proxy 沙盒”切换为“一个小而真实、边界清楚的 GENCODE/GRCh38 + ClinVar benchmark”。后续所有代码、结果和正文都要服务这个新故事：真实剪接位点、真实 GT/AG 诱饵 hard negative、真实 ClinVar 二分类、真实外部工具对比；限制也相应改成小样本、未去 paralog、近位点 ClinVar、距离混杂。
 
-- `data/shared/splits/train.csv`：855 条样本
-- `data/shared/splits/valid.csv`：120 条样本
-- `data/shared/splits/test.csv`：285 条样本
+## Critical Path
 
-`data/raw/` 中的大型 `genome.fa`、`gencode.gtf` 只作为可选资源准备来源，不作为主实验运行前提。TODO 中所有任务都应围绕“小样本可复现、结果可解释、报告清楚”推进。
+1. 数据冻结与 QC 收尾。
+2. 在真实数据上重跑实验一/二/三，生成新表和新图。
+3. 按新数字重写正文。
+4. 全文一致性检查。
 
-## 当前已完成
+不要先改正文再重跑结果；所有数字和图都会变。
 
-- 数据
-  - `data/shared/splits/train.csv`
-  - `data/shared/splits/valid.csv`
-  - `data/shared/splits/test.csv`
-  - `data/shared/processed/splice_sites_pm50.csv`
-  - `data/shared/processed/splice_sites_pm100.csv`
-  - `data/shared/processed/splice_sites_pm200.csv`
-  - `data/shared/processed/splice_sites_pm400.csv`
-  - `data/experiment_3/artificial_variant_effect.csv`
+---
 
-- 数据代码
-  - `src/data/build_synthetic_splice_dataset.py`
-  - `src/data/build_splice_site_dataset.py`
-  - `src/data/split_dataset.py`
-  - `src/data/build_variant_dataset.py`
+## Step 0. 数据收尾与冻结
 
-- 实验一
-  - `src/experiments/exp1/train.py`
-  - `src/experiments/exp1/evaluate.py`
-  - `src/experiments/exp1/run_classification.py`
+- [x] 真实 splice-site 数据已生成：GENCODE/GRCh38，donor / acceptor / hard-negative = 1000 / 1000 / 1000。
+- [x] 四个窗口 `pm50/100/200/400` 共用同一批 `sample_id -> split`。
+- [x] `train/valid/test` 按染色体 holdout，sample/gene/chromosome 互斥。
+- [x] ClinVar 真实变异表已生成：250 pathogenic/likely pathogenic splice-altering vs 250 benign/likely benign。
+- [x] ClinVar 已限制在 held-out test chromosomes，并排除实验一/二已采样 genes。
+- [x] ClinVar 距离混杂已写入 QC：致病变异更贴近剪接位点。
+- [x] 已导出 exact-distance-matched ClinVar 子集：`data/experiment_3/clinvar_splicing_variants_distance_matched.csv`。
+- [x] 距离-only baseline 已写入 `reports/data_qc.md`。
+- [x] Paralog/homology clustering 未做，已作为 `WARN` 写入 QC 限制。
+- [ ] 冻结数据版本记录到正文/附录：
+  - GRCh38 / GENCODE v50 / Ensembl 116。
+  - ClinVar fileDate: 2026-06-15。
+  - seed: 42。
+  - 构建命令：
+    - `python -m src.data.build_splice_site_dataset --max-per-class 1000 --windows 50 100 200 400`
+    - `python -m src.data.build_clinvar_variant_dataset`
+    - `python -m src.data.qc_splice_dataset`
+
+验收：`reports/data_qc.md` 中 Step 1-6、8-9 为 PASS，Step 7 为已解释的 WARN。
+
+---
+
+## Step 1. 在真实数据上重跑实验
+
+### Step 1.1 实验一：剪接位点三分类
+
+- [ ] 运行真实数据上的实验一：
+
+```bash
+python -m src.experiments.exp1.run_classification --full-data
+```
+
+- [ ] 生成并检查：
+  - `results/experiment_1/tables/experiment_1_metrics.csv`
+  - `results/experiment_1/tables/experiment_1_confusion_matrices.csv`
+  - `results/experiment_1/figures/experiment_1_macro_f1.png`
+  - `results/experiment_1/figures/experiment_1_confusion_matrices.png`
   - `reports/experiment_1.md`
+- [ ] 更新论文：
+  - 新表 3-1。
+  - 新图 3-1：Macro-F1。
+  - 新图 3-2：混淆矩阵，只保留真实模型面板，不再有 fallback/proxy 面板。
+- [ ] 检查 hard-negative FPR 分母和实际 false positives。
+- [ ] 若时间允许，跑 3-5 个随机种子并汇总 mean±std。
 
-- 实验二
-  - `src/experiments/exp2/run_multiscale.py`
-  - `src/experiments/exp2/run_full_context.py`
+### Step 1.2 实验二：上下文尺度与 hard negative
+
+- [ ] 运行真实数据上的实验二：
+
+```bash
+python -m src.experiments.exp2.run_multiscale
+```
+
+- [ ] 生成并检查：
+  - `results/experiment_2/tables/experiment_2A_multiscale_context.csv`
+  - `results/experiment_2/tables/experiment_2B_hard_negative.csv`
+  - `results/experiment_2/tables/experiment_2B_rare_motif.csv`
+  - `results/experiment_2/figures/exp2A_context_macro_f1.png`
+  - `results/experiment_2/figures/exp2A_context_auprc.png`
+  - `results/experiment_2/figures/exp2B_hard_negative_fpr.png`
   - `reports/experiment_2.md`
+- [ ] 更新论文：
+  - 新表 4-1。
+  - 新图 4-1 / 4-2 / 4-3。
+  - rare motif 补成小表：motif × model。
+- [ ] 明确说明：真实主 benchmark 中 non-splice 全部为 GT/AG hard negative，easy negative 只属于可选 synthetic control。
+- [ ] 写清楚上下文结果是否非单调，以及哪个窗口在真实数据上最稳。
+- [ ] 若时间允许，跑 3-5 个随机种子，尤其给 hard-negative FPR 加置信区间或 mean±std。
 
-- 实验三
-  - `src/experiments/exp3/run_variant_effect.py`
-  - `src/experiments/exp3/run_interpretability.py`
+### Step 1.3 实验三：真实 ClinVar 变异效应
+
+- [ ] 确认实验三使用真实 ClinVar 表：
+  - `configs/exp3_variant_effect.yaml`
+  - `data/experiment_3/clinvar_splicing_variants.csv`
+- [ ] 运行真实数据上的实验三：
+
+```bash
+python -m src.experiments.exp3.run_variant_effect
+```
+
+- [ ] 运行解释性分析，delta profile 应换成真实 ClinVar case：
+
+```bash
+python -m src.experiments.exp3.run_interpretability
+```
+
+- [ ] 生成并检查：
+  - `results/experiment_3/tables/experiment_3A_variant_scores.csv`
+  - `results/experiment_3/tables/experiment_3A_variant_metrics.csv`
+  - `results/experiment_3/tables/experiment_3A_distance_matched_variant_metrics.csv`
+  - `results/experiment_3/tables/variant_effect_stratified_by_type.csv`
+  - `results/experiment_3/figures/exp3_variant_auroc.png`
+  - `results/experiment_3/figures/exp3_variant_auprc.png`
+  - `results/experiment_3/figures/exp3_calibration_curve.png`
+  - `results/experiment_3/figures/variant_delta_profile_clinvar_real_case.png`
   - `reports/experiment_3.md`
+- [ ] 更新论文：
+  - 新表 5-2。
+  - 新图 5-1 / 5-2。
+  - 图 5-3：delta profile 换真实 ClinVar case。
+  - 图 5-4：分箱曲线改成基于分类器 delta，标题和横轴量纲不能沿用旧 zero-shot 的 0-1.75。
+- [ ] 报告 ClinVar exact-distance-matched 子集上的 AUROC/AUPRC。
+- [ ] 明确 AUPRC 基准线：ClinVar 250/250，因此 binary baseline = 0.5；splice-site 三分类 one-vs-rest/positive-vs-negative处按对应定义写清。
+- [ ] 不再讲 synthetic donor_gain / acceptor_gain 主结论；故事改成真实 ClinVar splice-altering vs benign，按 donor/acceptor target 分层。
+- [ ] 若时间允许，跑 3-5 个随机种子，给 ClinVar 指标加 mean±std 或 bootstrap CI。
 
-## 总原则
+---
 
-- [x] 所有实验入口默认使用当前小样本 split。
-  - 说明：统一检查三个实验的默认参数和路径解析，确保直接运行实验脚本时读取 `data/shared/splits/` 下的 855/120/285 小样本。
-  - 修改：`src/experiments/exp1/common.py`
-  - 修改：`src/experiments/exp2/run_multiscale.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 修改：`src/experiments/exp3/run_interpretability.py`
-  - 要点：不要再默认尝试生成或读取百万级全量数据。
-  - 验收：各实验 `--help` 和默认运行路径中不再出现必须依赖 `data/raw/` 或旧全量 split 的逻辑。
+## Step 2. 按章改写正文
 
-- [x] README 中明确数据规模选择。
-  - 说明：把“本项目主实验使用小样本 split”写入项目入口文档和三份实验报告，避免读者误以为当前结果来自百万级完整数据集。
-  - 修改：`README.md`
-  - 修改：`reports/experiment_1.md`
-  - 修改：`reports/experiment_2.md`
-  - 修改：`reports/experiment_3.md`
-  - 要点：说明主实验使用 `train/valid/test = 855/120/285` 的小样本，而不是完整数据集。
-  - 验收：README 和报告均能清楚区分“小样本主实验”“可选 raw 资源”“未运行的全量实验”。
+### 摘要
 
-## 实验一：剪接位点三分类
+- [ ] 删除 tissue usage / zero-shot / synthetic sandbox 等旧表述。
+- [ ] 改成：真实 GENCODE/GRCh38 splice-site benchmark + ClinVar 小样本 benchmark。
+- [ ] 方法摘要重写：真实位点、GT/AG hard negative、chromosome holdout、ClinVar pathogenic vs benign、distance-matched diagnostic。
+- [ ] 结论语气升级但保持边界：真实小样本、限制清楚。
 
-- [x] 补齐 SpliceAI 三分类 baseline，但只在当前小样本 test 上运行。
-  - 说明：封装 SpliceAI 推理接口，把 donor/acceptor 信号转换成实验一的三分类输出，用作与 CNN、RNA-FM proxy、RNABERT proxy 对比的真实工具 baseline。
-  - 新增：`src/models/spliceai_wrapper.py`
-  - 修改：`src/experiments/exp1/common.py`
-  - 修改：`src/experiments/exp1/run_classification.py`
-  - 输出：`results/experiment_1/tables/experiment_1_metrics.csv`
-  - 输出：`results/experiment_1/figures/experiment_1_macro_f1.png`
-  - 要点：将中心附近 donor / acceptor score 转成 `donor, acceptor, non_splice` 三分类概率。
-  - 完成备注：当前环境缺少真实 `spliceai` 包，实验一主表中的该行以 `backend=spliceai_signal_proxy` 明确标注；不会把 proxy fallback 写成真实 SpliceAI 完整推理。
-  - 验收：metrics 表中新增 SpliceAI 行，且该行只基于 `data/shared/splits/test.csv` 计算。
+### 第 1 章：问题与 RQ
 
-- [x] 修正实验一 hard-negative FPR。
-  - 说明：当前 hard-negative 指标需要严格限定在 `negative_type` 标注的困难负例上，避免把普通 non-splice 样本混入 FPR 统计。
-  - 修改：`src/experiments/exp1/evaluate.py`
-  - 修改：`src/experiments/exp1/common.py`
-  - 依赖：`data/shared/splits/test.csv` 中应保留 `negative_type` 字段。
-  - 输出：`results/experiment_1/tables/experiment_1_metrics.csv`
-  - 验收：输出表中 hard-negative FPR 的分母、样本数和筛选条件可追溯，报告中能解释该指标的含义。
+- [ ] RQ 保持，但解释更新：
+  - RQ1：真实位点三分类。
+  - RQ2：真实上下文与真实 hard negative，不再是合成自证。
+  - RQ3：真实 ClinVar 变异效应排序。
+- [ ] 更新“哪个实验回答哪个 RQ”的表述。
+- [ ] 避免承诺 tissue usage 或 gain/loss 四类主分析。
 
-- [x] 明确 proxy 与真实 frozen encoder 结果的区别。
-  - 说明：把当前 k-mer/token 特征近似实验和真实 pretrained backbone 小样本推理分开呈现，避免把 proxy 结果描述成真实 foundation model 结果。
-  - 修改：`reports/experiment_1.md`
-  - 修改：`src/experiments/exp1/run_classification.py`
-  - 输出：`results/experiment_1/tables/real_foundation/`
-  - 要点：报告中明确哪些是 k-mer/token proxy，哪些是真实 pretrained backbone 小样本运行。
-  - 验收：实验一报告中每个模型名称都有清晰标签，例如 `proxy`、`frozen encoder` 或 `optional real model`。
+### 第 2 章：数据、模型与评价
 
-- [x] 明确 RNA-FM / RNABERT 本地权重准备方式。
-  - 说明：提供一个资源准备入口和文档说明，用于把可选 pretrained 权重放到本地固定目录，主实验没有权重时仍可运行 proxy 链路。
-  - 新增：`src/resources/prepare_foundation_models.py`
-  - 修改：`README.md`
-  - 修改：`reports/experiment_1.md`
-  - 输出说明：`models/hf/rnafm/`、`models/hf/rnabert/`
-  - 要点：只需要支持当前小样本推理，不要求全量训练。
-  - 验收：缺少本地权重时脚本给出明确提示；存在权重时可以对当前小样本完成 frozen encoder 推理。
+#### 2.1 真实 splice-site 数据构造
 
-## 实验二：多尺度上下文与 hard negative
+- [ ] 写清楚：
+  - FASTA: GRCh38 / GENCODE v50 primary assembly。
+  - GTF: GENCODE v50 annotation。
+  - donor = intron 5' boundary。
+  - acceptor = intron 3' boundary。
+  - 负链反向互补。
+  - canonical GT/AG 过滤。
+  - non-splice = 不落在注释剪接位点上的真实 GT/AG 诱饵。
+  - 采样比例 donor / acceptor / hard-negative = 1:1:1。
+  - positive base rate = 2000/3000 = 0.667。
+  - chromosome holdout: train chr1-16, valid chr17-18, test chr19-22+X。
+- [ ] 表 2-1 替换为真实 split 细分计数：
+  - donor / acceptor / easy-negative / hard-negative。
+  - hard-FPR 分母。
+  - 各 split positive rate。
+- [ ] 明确 easy negative 不属于真实主 benchmark，只属于 optional synthetic control。
 
-- [x] 保持实验二窗口范围为当前 `pm50/pm100/pm200/pm400`。
-  - 说明：将实验二主线限定为已经准备好的四个窗口文件，保证多尺度比较可以在当前仓库数据上复现。
-  - 修改：`src/experiments/exp2/run_multiscale.py`
-  - 修改：`reports/experiment_2.md`
-  - 要点：不再把 `pm1000`、5kb、10kb 作为主实验 TODO；如需展示，只作为可选 case study。
-  - 验收：默认运行只读取 `splice_sites_pm50/100/200/400.csv`，报告不把未生成的大窗口写成已完成实验。
+#### 2.2 ClinVar 构造
 
-- [x] 接入 Pangolin 小样本 case study。
-  - 说明：补一个 Pangolin 包装器，在 test 或 hard-negative 小集合上跑少量样本，用来观察长上下文工具在困难负例上的表现。
-  - 新增：`src/models/pangolin_wrapper.py`
-  - 修改：`src/experiments/exp2/run_multiscale.py`
-  - 修改：`src/resources/run_real_model_smoke.py`
-  - 输出：`results/experiment_2/tables/experiment_2B_hard_negative.csv`
-  - 输出：`results/experiment_2/figures/exp2B_hard_negative_fpr.png`
-  - 要点：只对当前 test / hard-negative 小样本运行，不做全量 benchmark。
-  - 验收：Pangolin 结果单独标注为 case study，失败或缺依赖时不影响实验二 proxy 主链路。
+- [ ] 写清楚：
+  - SNV only。
+  - pathogenic / likely pathogenic + splice-related 或 near-splice → positive。
+  - benign / likely benign + near-splice → neutral。
+  - balanced 250/250。
+  - target class = 最近 donor/acceptor。
+  - REF 与 GRCh38 校验。
+  - 负链 REF/ALT 转 transcript orientation。
+  - ClinVar 限制在 held-out test chromosomes，并排除实验一/二已采样 genes。
+- [ ] 主动写距离混杂：
+  - splice_altering median distance ≈ 9.5。
+  - neutral median distance ≈ 17。
+  - distance-only AUROC ≈ 0.637。
+  - exact-distance-matched subset: 318 rows, 159/159, distance-only AUROC = 0.5。
+- [ ] 写明 exact-distance-matched AUROC 是诊断模型是否只学距离捷径。
 
-- [x] 增加 rare motif 小样本补充测试。
-  - 说明：构造少量非 canonical motif 样本，例如 GC-AG，观察模型是否只记住 GT-AG/AG 规则。
-  - 修改：`src/data/build_synthetic_splice_dataset.py`
-  - 修改：`src/experiments/exp2/run_multiscale.py`
-  - 输出：`data/shared/processed/rare_motif_splice_sites.csv`
-  - 输出：`results/experiment_2/tables/experiment_2B_rare_motif.csv`
-  - 要点：样本量控制在几十到几百条，用于讨论 GC-AG 等非 canonical motif。
-  - 验收：rare motif 表中包含 motif 类型、样本数、模型预测分数和按 motif 分组的指标。
+#### 2.3 模型边界
 
-- [x] 将 tissue-specific usage 明确为小样本 case study。
-  - 说明：把 GTEx 相关内容收缩为少量组织/事件展示，只用于说明未来可扩展方向，不作为组织特异性建模结论。
-  - 修改：`src/resources/fetch_gtex_sqtl_cases.py`
-  - 修改：`src/experiments/exp2/run_full_context.py`
-  - 修改：`reports/experiment_2.md`
-  - 输出：`results/experiment_2/tables/experiment_2C_gtex_tissue_usage.csv`
-  - 输出：`results/experiment_2/figures/exp2C_tissue_splice_usage_heatmap.png`
-  - 要点：不做 GTEx 全量建模，只做少量组织/事件展示。
-  - 验收：输出表和热图标注 case 数量，报告中不使用“大规模 GTEx 验证”之类表述。
+- [ ] 删除 fallback/proxy 措辞。
+- [ ] 模型写成真实可运行对象：
+  - CNN baseline。
+  - RNA-FM frozen encoder + MLP。
+  - RNABERT frozen encoder + MLP。
+  - 实验三外部工具：SpliceAI / Pangolin / MMSplice / MaxEntScan。
+- [ ] 说明外部工具现在输入真实基因组序列窗口，比较更公平。
 
-- [x] Borzoi / AlphaGenome 只保留为可选长程 case study。
-  - 说明：长程调控模型暂不纳入主结果，只保留接口草案、文档示例或极少量可运行样例。
-  - 可新增：`src/models/borzoi_wrapper.py`
-  - 可新增：`src/models/alphagenome_case_study.md`
-  - 修改：`reports/experiment_2.md`
-  - 输出：`results/experiment_2/tables/long_range_regulatory_case_study.csv`
-  - 要点：不要求真实模型全量推理；可用文档式 case study 或极少数示例。
-  - 验收：报告明确这是 optional case study，缺少外部模型或 API 时不会阻塞主实验。
+#### 2.4 训练协议
 
-- [x] 报告中明确 proxy / real case study 边界。
-  - 说明：整理实验二报告措辞，把 synthetic/proxy 分析、真实模型 smoke、GTEx case study 放在不同小节。
-  - 修改：`reports/experiment_2.md`
-  - 要点：tissue usage、junction topology 当前主要是 synthetic/proxy，不写成大规模真实生物结论。
-  - 验收：读者可以从小节标题和图表注释直接判断每个结果的数据来源和证据强度。
+- [ ] 加入 valid 选择最优轮 / early stopping。
+- [ ] 写清楚 checkpoint、seed、row caps 或 full-data 设置。
+- [ ] 若跑多 seed，写 seed 列表。
 
-## 实验三：异常剪接变异效应预测
+#### 2.5 评价指标
 
-- [x] 拆分 `cryptic_gain` 为 `donor_gain` 与 `acceptor_gain`。
-  - 说明：人工变异集需要区分新增 donor 信号和新增 acceptor 信号，便于分析不同异常剪接机制。
-  - 修改：`src/data/build_variant_dataset.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 修改：`src/experiments/exp3/run_interpretability.py`
-  - 输出：`data/experiment_3/artificial_variant_effect.csv`
-  - 输出：`results/experiment_3/tables/variant_effect_stratified_by_type.csv`
-  - 要点：继续使用小样本人工变异，不扩展到大规模变异集。
-  - 验收：变异类型统计中不再只有笼统 `cryptic_gain`，分层指标能分别显示 donor_gain 和 acceptor_gain。
+- [ ] hard-FPR 写清分母：label=non_splice 且 hard_negative。
+- [ ] AUPRC 基准线：
+  - splice-site positive-vs-negative 时按实际 positive rate 0.667。
+  - ClinVar 二分类基准线 0.5。
+  - 多分类 macro AUPRC 需说明是 macro one-vs-rest。
+- [ ] 若有多 seed，写 mean±std / CI。
 
-- [x] ClinVar 只做小样本 smoke / case study。
-  - 说明：从 ClinVar 中选少量与剪接相关的变异和 matched control，验证流程能跑通，不追求完整 ClinVar benchmark。
-  - 新增：`src/data/build_clinvar_variant_dataset.py`
-  - 修改：`src/resources/make_clinvar_smoke.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`data/experiment_3/clinvar_splicing_variants_smoke.csv`
-  - 输出：`results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`
-  - 输出：`results/experiment_3/figures/exp3_clinvar_smoke_scores.png`
-  - 要点：不做完整 ClinVar benchmark，只选少量 splice-related 与 matched control 示例。
-  - 验收：ClinVar 结果文件中包含样本来源、标签构造方式和模型分数，报告标注为 smoke/case study。
+### 第 3 章：实验一
 
-- [x] 将真实 SpliceAI / Pangolin / MMSplice / MaxEntScan 纳入小样本变异对照。
-  - 说明：为实验三增加真实剪接变异工具的可选 wrapper，在人工变异和 ClinVar smoke 上形成小规模对照。
-  - 新增：`src/models/spliceai_wrapper.py`
-  - 新增：`src/models/pangolin_wrapper.py`
-  - 新增：`src/models/mmsplice_wrapper.py`
-  - 新增：`src/models/maxentscan_wrapper.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`results/experiment_3/tables/experiment_3A_artificial_variant_metrics.csv`
-  - 输出：`results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`
-  - 要点：运行对象为当前人工变异小样本和 ClinVar smoke 小样本。
-  - 验收：每个工具的依赖、输入格式、失败跳过逻辑清楚；结果表能区分 proxy 模型和真实工具。
+- [ ] 使用真实重跑数字重写。
+- [ ] 围绕真实 donor/acceptor/non-splice 三分类展开。
+- [ ] hard-FPR 仍作为核心诊断。
+- [ ] 说明 CNN 与 frozen encoder 差距是否显著；若只有单 seed，不要夸统计显著。
+- [ ] 图 3-2 只保留真实模型混淆矩阵。
 
-- [x] GTEx sQTL 只做小样本 tissue-specific case study。
-  - 说明：选取少量 sQTL 事件，记录组织、基因、junction 和模型 delta score，用于展示变异效应与组织剪接事件的连接方式。
-  - 修改：`src/resources/fetch_gtex_sqtl_cases.py`
-  - 新增：`src/data/build_sqtl_variant_dataset.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`data/experiment_3/gtex_sqtl_variants_smoke.csv`
-  - 输出：`results/experiment_3/tables/experiment_3C_sqtl_case_study.csv`
-  - 要点：输出字段保留 `variant_id,tissue,target_gene,target_junction,observed_effect_direction,model_delta_score`，但不做全量 GTEx 评估。
-  - 验收：报告中只讨论具体 case 的方向一致性或不一致性，不给出总体 GTEx 性能结论。
+### 第 4 章：实验二
 
-- [x] 实现 RNA-FM / RNABERT pseudo-likelihood zero-shot scoring。
-  - 说明：在不训练新分类头的前提下，用 masked/pseudo-likelihood 分数比较 reference 与 alternate 序列，形成 zero-shot 变异影响分数。
-  - 修改：`src/models/foundation_backbones.py`
-  - 修改：`src/models/simple_splice_models.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`results/experiment_3/tables/experiment_3A_artificial_variant_scores.csv`
-  - 要点：只在当前人工变异小样本上计算。
-  - 验收：分数表中包含 ref_score、alt_score、delta_score 和模型名称，缺少权重时能跳过并保留说明。
+- [ ] 使用真实重跑数字重写。
+- [ ] 讲“上下文非单调”或实际观察到的窗口趋势。
+- [ ] hard-negative stress test 作为主证据。
+- [ ] rare motif 改为小表，并明确是 synthetic control / optional stress test。
+- [ ] 不再把合成上下文当作真实发现来源。
 
-- [x] 增加 calibration curve 与多阈值 Top-k / Enrichment。
-  - 说明：补充比单点 AUC/F1 更细的排序与校准分析，用来观察小样本下高分变异是否更集中命中正例。
-  - 修改：`src/utils.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`results/experiment_3/tables/experiment_3A_topk_enrichment_curve.csv`
-  - 输出：`results/experiment_3/figures/exp3_calibration_curve.png`
-  - 要点：基于当前小样本，报告中说明样本量限制。
-  - 验收：Top-k 表至少包含 k、positive_count、precision/enrichment；校准图标注样本数和 bin 数。
+### 第 5 章：实验三
 
-- [x] 增加 ClinVar smoke case 的 variant delta profile。
-  - 说明：对 ClinVar smoke 中的代表变异绘制突变前后窗口内 donor/acceptor 信号变化，帮助解释模型判断来自哪个局部区域。
-  - 修改：`src/experiments/exp3/run_interpretability.py`
-  - 依赖：`data/experiment_3/clinvar_splicing_variants_smoke.csv`
-  - 输出：`results/experiment_3/tables/variant_delta_profile_clinvar_smoke_case.csv`
-  - 输出：`results/experiment_3/figures/variant_delta_profile_clinvar_smoke_case.png`
-  - 验收：每个 case 至少包含 variant_id、坐标、ref/alt 序列窗口、delta 最大位置和对应图。
+- [ ] 故事改成：真实 ClinVar 致病 vs 良性，按 donor/acceptor target 分层。
+- [ ] 不再沿用 donor_loss / donor_gain / acceptor_loss / acceptor_gain 四类合成结论。
+- [ ] 解释外部工具比较变公平：真实序列回到 SpliceAI/Pangolin 训练分布附近。
+- [ ] 把上一版“强工具垫底”解释清楚：旧结果来自合成序列分布偏移，不作为新结论。
+- [ ] 补距离混杂与 exact-distance-matched 诊断。
+- [ ] 表 5-2 同时给 full ClinVar 与 distance-matched 指标，或至少在正文报告匹配子集 AUROC/AUPRC。
+- [ ] 图 5-4 的标题、横轴、图注改成分类器 delta/calibration，不沿用 zero-shot 旧量纲。
+- [ ] AUPRC 基准线标为 0.5。
 
-## 可解释性
+### 第 6 章：讨论与限制
 
-- [x] 增加 RNA-FM / RNABERT attention 可视化。
-  - 说明：从当前 test 小样本中挑选 donor、acceptor、hard-negative 代表序列，导出 attention 热图用于解释 foundation encoder 关注区域。
-  - 修改：`src/models/foundation_backbones.py`
-  - 修改：`src/experiments/exp3/run_interpretability.py`
-  - 输出：`results/experiment_3/figures/attention_donor_heatmap.png`
-  - 输出：`results/experiment_3/figures/attention_acceptor_heatmap.png`
-  - 输出：`results/experiment_3/figures/attention_hard_negative_heatmap.png`
-  - 要点：只选择当前 test 小样本中的少量代表样本。
-  - 验收：图中标出中心位点和 motif 区域；没有真实权重时报告中明确该项未运行或仅有 proxy。
+- [ ] 6.2 改写：
+  - 删除 gain/loss 主讨论。
+  - 改为 donor/acceptor target、hard-negative 失败模式、真实诱饵上下文。
+- [ ] 6.3 限制整体换代：
+  - 小样本真实 benchmark。
+  - 未做 paralog/homology clustering。
+  - ClinVar 限于近位点 SNV。
+  - 距离混杂仍需匹配子集诊断。
+  - ClinVar 样本集中在 held-out test chromosomes，外推性有限。
+- [ ] 不再把“合成不代表真实”作为主限制，只保留为 synthetic control 的边界。
 
-- [x] 将 ISM 扩展到 CNN、RNA-FM、RNABERT。
-  - 说明：把 in-silico mutagenesis 从当前 signal proxy 扩展到其他模型，逐碱基替换并记录预测分数变化。
-  - 修改：`src/experiments/exp3/run_interpretability.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 输出：`results/experiment_3/tables/*_ism_matrix.csv`
-  - 输出：`results/experiment_3/figures/ism_*_heatmap.png`
-  - 要点：当前 ISM 主要用 `SpliceAI signal proxy`；扩展时只选少量样本，避免计算量失控。
-  - 验收：每个模型的 ISM 输出包含样本 ID、位置、替换碱基和 delta score，运行样本数可配置。
+### 第 7 章：结论
 
-## 数据与资源
+- [ ] 重写“能支持/不能支持”清单：
+  - 能支持：真实 GT/AG hard-negative 是有效压力测试；真实上下文有价值；ClinVar 上可做真实小样本排序诊断。
+  - 不能支持：全基因组泛化、paralog 去泄漏后的结论、组织特异性剪接、gain 类全面评测。
+- [ ] 摘要、引言、结论三处声称保持一致。
 
-- [x] 确认当前小样本 split 字段完整。
-  - 说明：检查三个 split 是否保留训练、评估、hard-negative 分析和变异构建需要的最小字段集合。
-  - 修改：`src/data/build_splice_site_dataset.py`
-  - 修改：`src/data/split_dataset.py`
-  - 检查：`data/shared/splits/train.csv`
-  - 检查：`data/shared/splits/valid.csv`
-  - 检查：`data/shared/splits/test.csv`
-  - 必要字段：`sample_id,chrom,start,end,strand,center,label,label_name,negative_type,sequence,gene_id,transcript_id`
-  - 验收：新增检查脚本或构建流程在字段缺失时直接报错，并提示缺失列名。
+### 参考文献
 
-- [x] 增加小样本数据质控报告。
-  - 说明：为当前小样本生成独立 QC 文档，记录类别分布、长度分布、motif 情况和 gene leakage 风险。
-  - 新增：`src/data/qc_splice_dataset.py`
-  - 输出：`reports/data_qc.md`
-  - 检查：类别数量、序列长度、N 比例、中心 motif、hard negative motif 命中率、gene leakage。
-  - 要点：质控对象是当前小样本 split，不是完整数据集。
-  - 验收：`reports/data_qc.md` 可复现生成，并明确列出 train/valid/test 的样本数和主要 QC 结论。
+- [ ] 补 Pangolin: Zeng & Li, Genome Biology 2022。
+- [ ] 确认 SpliceAI、MMSplice、MaxEntScan、GENCODE、ClinVar 引用齐全。
 
-- [x] 明确 raw data 与模型权重为可选资源。
-  - 说明：把 3GB 级 raw 文件和大型模型权重从主链路中剥离，只作为需要真实资源时的手动准备项。
-  - 修改：`README.md`
-  - 新增：`src/resources/prepare_raw_resources.py`
-  - 新增：`src/resources/prepare_foundation_models.py`
-  - 输出：`reports/resource_setup.md`
-  - 要点：`data/raw/` 和 `models/hf/` 不进 git；主实验不依赖完整 raw 数据。
-  - 验收：没有 raw 文件或模型权重时，实验一到三的默认小样本流程仍能运行；资源文档说明如何补齐可选文件。
+---
 
-## 工程与文档
+## Step 3. 全文一致性与收尾检查
 
-- [x] 补齐轻量环境依赖。
-  - 说明：拆分主链路依赖和真实模型可选依赖，让新环境能先运行小样本 synthetic/proxy 实验。
-  - 新增：`requirements.txt`
-  - 修改：`requirements-real.txt`
-  - 要点：`requirements.txt` 支持当前小样本 synthetic/proxy 主链路；`requirements-real.txt` 放真实模型可选依赖。
-  - 验收：只安装 `requirements.txt` 时可运行数据检查、proxy 模型和报告生成；真实模型依赖只在需要时安装。
+### 关键词清理
 
-- [x] 增加配置目录。
-  - 说明：用配置文件集中管理数据路径、输出路径、模型列表和样本数量，减少各实验脚本中的硬编码。
-  - 新增：`configs/exp1_classification.yaml`
-  - 新增：`configs/exp2_multiscale.yaml`
-  - 新增：`configs/exp3_variant_effect.yaml`
-  - 修改：`src/experiments/exp1/run_classification.py`
-  - 修改：`src/experiments/exp2/run_multiscale.py`
-  - 修改：`src/experiments/exp3/run_variant_effect.py`
-  - 要点：配置中的默认数据路径应指向当前小样本 split。
-  - 验收：三个实验脚本均支持 `--config`，默认配置不读取全量数据。
+- [ ] 全文搜索并处理：
 
-- [x] 增加自动化 smoke tests。
-  - 说明：增加轻量测试来保护当前仓库结构、路径解析和核心 metrics，避免后续整理目录时再次破坏运行入口。
-  - 新增：`tests/test_data_builders.py`
-  - 新增：`tests/test_metrics.py`
-  - 新增：`tests/test_pipeline_smoke.py`
-  - 覆盖：小样本数据读取、variant 构建、metrics 计算、各实验 `--help`。
-  - 要点：测试不应下载 raw 数据，也不应生成百万级数据。
-  - 验收：`pytest` 能在没有 `data/raw/`、没有外部模型权重的环境中完成 smoke tests。
+```bash
+rg -n "synthetic|fallback|proxy|zero-shot|gain|loss|tissue usage|smoke" README.md reports report_letax
+```
 
-- [x] 增加模型卡和实验日志。
-  - 说明：记录每个模型的数据来源、训练方式、是否 proxy、主要限制和当前实验运行记录，方便后续报告引用。
-  - 新增：`reports/model_cards.md`
-  - 新增：`reports/experiment_log.md`
-  - 修改：`reports/experiment_1.md`
-  - 修改：`reports/experiment_2.md`
-  - 修改：`reports/experiment_3.md`
-  - 验收：模型卡覆盖实验一到三出现的模型；实验日志记录运行日期、命令、输入数据和输出文件。
+- [ ] 每处要么删除，要么明确标为 optional synthetic control / smoke plumbing，不作为主结果。
 
-- [x] 清理报告生成脚本中的过时内容。
-  - 说明：更新报告生成脚本，让它只引用当前 `reports/`、`results/experiment_*` 和小样本数据结构中的文件。
-  - 修改：`src/reports/write_c_part_report.py`
-  - 输出：`reports/experiment_1.md`、`reports/experiment_2.md`、`reports/experiment_3.md` 或统一总报告。
-  - 要点：不要再引用不存在的 `REAL_RESOURCE_STATUS.md`、`C_PART_EXECUTION_DETAILS.md`；不要描述全量数据实验。
-  - 验收：重新生成报告后不会恢复旧 report 文件，也不会在正文中声称已完成全量数据实验。
+### 数字与图表一致性
 
-## 可选高级项
+- [ ] 表 3-1 与图 3-1/3-2 一致。
+- [ ] 表 4-1 与图 4-1/4-2/4-3 一致。
+- [ ] 表 5-2 与图 5-1/5-2/5-4 一致。
+- [ ] 5.2、5.4 中“谁最高”的文字和表 5-2 对齐。
+- [ ] 所有 AUPRC 处标清 baseline：
+  - ClinVar = 0.5。
+  - splice-site positive-vs-negative = 0.667。
+  - macro AUPRC = macro one-vs-rest。
 
-- [x] 支持 Nucleotide Transformer 或 RNAErnie 的小样本对照。
-  - 说明：作为可选扩展模型，只在当前小样本上做 frozen/proxy 对照，用来丰富实验一模型比较。
-  - 新增：`src/models/nucleotide_transformer_mlp.py`
-  - 新增：`src/models/rnaernie_mlp.py`
-  - 修改：`src/experiments/exp1/common.py`
-  - 要点：只跑当前小样本，不做全量 fine-tuning。
-  - 验收：缺少模型权重时该项可跳过；存在权重时结果追加到实验一 metrics 表并标注 optional。
+### 图注复查
 
-- [x] RNA-FM / RNABERT fine-tuning 仅作为可选小样本实验。
-  - 说明：如果后续需要尝试微调，也只在 855/120/285 split 上做小样本探索，不作为主结论来源。
-  - 修改：`src/models/foundation_backbones.py`
-  - 修改：`src/experiments/exp1/train.py`
-  - 输出：`results/experiment_1/tables/experiment_1_finetune_metrics.csv`
-  - 要点：不要求百万级训练。
-  - 验收：fine-tuning 默认关闭，需要显式参数启用；报告中说明该结果受小样本规模限制。
+- [ ] 图 3-2：真实模型混淆矩阵，不再说 fallback/proxy。
+- [ ] 图 5-3：真实 ClinVar delta profile，不再说 artificial donor loss/gain。
+- [ ] 图 5-4：分类器 delta/calibration，横轴量纲正确。
+
+### 附录与路径
+
+- [ ] 附录 A 路径更新：
+  - `src/data/build_splice_site_dataset.py`
+  - `src/data/build_clinvar_variant_dataset.py`
+  - `src/data/qc_splice_dataset.py`
+  - `data/experiment_3/clinvar_splicing_variants_distance_matched.csv`
+- [ ] 命令更新为真实数据主线。
+- [ ] 说明 synthetic builders 仅用于 optional control。
+
+### 最终验证命令
+
+- [ ] 数据 QC：
+
+```bash
+python -m src.data.qc_splice_dataset
+```
+
+- [ ] 单元测试：
+
+```bash
+python -m pytest -q
+```
+
+- [ ] 报告一致性搜索：
+
+```bash
+rg -n "synthetic|fallback|proxy|zero-shot|gain|loss|tissue usage|smoke" README.md reports report_letax
+```
+
+- [ ] LaTeX 编译通过，图路径无缺失。
+
+---
+
+## Done Definition
+
+完成标准：
+
+- [ ] `reports/data_qc.md` 除 paralog/homology limitation 外无 FAIL。
+- [ ] 三个实验全部在真实数据上重跑，并生成新表新图。
+- [ ] 正文所有数字来自新结果。
+- [ ] ClinVar 距离混杂和 distance-matched diagnostic 写入第 2 章和第 5 章。
+- [ ] Paralog 未去重写入限制。
+- [ ] 全文不再把 synthetic/proxy/fallback 当主结果。
+- [ ] 摘要、引言、结论三个层级的主张一致。

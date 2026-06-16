@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from src.utils import REQUIRED_SPLIT_COLUMNS, SHARED_PROCESSED_DIR
+from src.utils import REQUIRED_SPLIT_COLUMNS, SHARED_PROCESSED_DIR, SHARED_SPLIT_DIR, split_name
 
 
 LABELS = {
@@ -54,6 +54,7 @@ class Candidate:
     strand: str
     gene_id: str
     transcript_id: str
+    motif_type: str
 
 
 class FastaIndex:
@@ -332,16 +333,20 @@ def extract_sequence(
     return start, end, sequence
 
 
-def candidate_has_motif(
+def candidate_motif_type(
     fasta: FastaIndex,
     chrom: str,
     center: int,
     strand: str,
-) -> bool:
+) -> str | None:
     sequence = oriented_window(fasta, chrom, center, strand, 2)
     if sequence is None or len(sequence) != 5:
-        return False
-    return sequence[3:5] == "GT" or sequence[0:2] == "AG"
+        return None
+    if sequence[3:5] == "GT":
+        return "hard_gt"
+    if sequence[0:2] == "AG":
+        return "hard_ag"
+    return None
 
 
 def passes_window_filters(
@@ -451,9 +456,10 @@ def sample_negative_candidates(
                     continue
                 if (site.chrom, center) in annotated_any_strand or key in annotated_same_strand:
                     continue
-                if not candidate_has_motif(fasta, site.chrom, center, site.strand):
+                motif_type = candidate_motif_type(fasta, site.chrom, center, site.strand)
+                if motif_type is None:
                     continue
-                candidates.append(Candidate(site.chrom, center, site.strand, site.gene_id, site.transcript_id))
+                candidates.append(Candidate(site.chrom, center, site.strand, site.gene_id, site.transcript_id, motif_type))
                 seen.add(key)
                 break
 
@@ -511,9 +517,12 @@ def build_rows_for_window(
                 "label": site.label,
                 "label_name": LABELS[site.label],
                 "negative_type": "positive",
+                "motif_type": "canonical",
                 "sequence": sequence,
                 "gene_id": site.gene_id,
                 "transcript_id": site.transcript_id,
+                "data_source": "real_gencode_grch38_v1",
+                "split": split_name(site.chrom),
             }
         )
 
@@ -539,9 +548,12 @@ def build_rows_for_window(
                 "label": 2,
                 "label_name": LABELS[2],
                 "negative_type": "hard_gtag",
+                "motif_type": candidate.motif_type,
                 "sequence": sequence,
                 "gene_id": candidate.gene_id,
                 "transcript_id": candidate.transcript_id,
+                "data_source": "real_gencode_grch38_v1",
+                "split": split_name(candidate.chrom),
             }
         )
 
@@ -561,9 +573,12 @@ def write_csv(path: Path, rows: list[dict[str, object]], full_columns: bool) -> 
             "label",
             "label_name",
             "negative_type",
+            "motif_type",
             "sequence",
             "gene_id",
             "transcript_id",
+            "data_source",
+            "split",
         ]
     else:
         fieldnames = [
@@ -588,20 +603,139 @@ def write_csv(path: Path, rows: list[dict[str, object]], full_columns: bool) -> 
         writer.writerows(rows)
 
 
+def validate_raw_inputs(genome_path: Path, gtf_path: Path) -> None:
+    missing = [str(path) for path in [genome_path, gtf_path] if not path.exists()]
+    if missing:
+        raise FileNotFoundError(
+            "Real splice-site dataset requires local raw resources. Missing: "
+            + ", ".join(missing)
+            + ". Place GRCh38 FASTA at data/raw/genome.fa and GENCODE GTF at data/raw/gencode.gtf."
+        )
+
+
+def write_window_and_splits(rows: list[dict[str, object]], window: int, out_dir: Path, split_dir: Path, full_columns: bool) -> None:
+    processed_path = out_dir / f"splice_sites_pm{window}.csv"
+    write_csv(processed_path, rows, full_columns)
+    for split in ("train", "valid", "test"):
+        split_rows = [row for row in rows if row.get("split") == split]
+        write_csv(split_dir / f"{split}_pm{window}.csv", split_rows, full_columns)
+        if window == 200:
+            write_csv(split_dir / f"{split}.csv", split_rows, full_columns)
+    if window == 200:
+        write_csv(split_dir / "cross_gene_test.csv", [row for row in rows if row.get("split") == "test"], full_columns)
+
+
+def build_and_write_real(
+    genome_path: Path = PROJECT_ROOT / "data/raw/genome.fa",
+    gtf_path: Path = PROJECT_ROOT / "data/raw/gencode.gtf",
+    out_dir: Path = SHARED_PROCESSED_DIR,
+    split_dir: Path = SHARED_SPLIT_DIR,
+    windows: list[int] | None = None,
+    seed: int = 42,
+    max_n_ratio: float = 0.05,
+    negative_radius: int = 5000,
+    negative_pool_ratio: float = 1.5,
+    negative_attempts: int = 80,
+    max_per_class: int | None = 1000,
+    protein_coding_only: bool = False,
+    rna: bool = False,
+    chroms: str = ",".join(STANDARD_EXPERIMENT_CHROMS),
+    all_chroms: bool = False,
+    keep_noncanonical_positives: bool = False,
+    full_columns: bool = True,
+    gtf_line_limit: int | None = None,
+) -> dict[int, list[dict[str, object]]]:
+    validate_raw_inputs(genome_path, gtf_path)
+    windows = [50, 100, 200, 400] if windows is None else windows
+    rng = random.Random(seed)
+    max_window = max(windows)
+    allowed_chroms = None if all_chroms else parse_chroms(chroms)
+
+    fasta = FastaIndex(genome_path)
+    try:
+        transcripts = read_transcripts(gtf_path, fasta, protein_coding_only, gtf_line_limit)
+        print(f"Loaded transcripts with exons: {len(transcripts):,}")
+
+        sites, transcript_bounds, annotated_any, annotated_same = build_positive_sites(transcripts)
+        donor_count = sum(1 for site in sites if site.label == 0)
+        acceptor_count = sum(1 for site in sites if site.label == 1)
+        print(f"Annotated sites after de-duplication: donor={donor_count:,}, acceptor={acceptor_count:,}")
+
+        sites = filter_positive_sites(
+            sites,
+            fasta,
+            windows,
+            max_n_ratio,
+            allowed_chroms,
+            not keep_noncanonical_positives,
+        )
+        donor_count = sum(1 for site in sites if site.label == 0)
+        acceptor_count = sum(1 for site in sites if site.label == 1)
+        print(
+            "Positive sites after experiment filtering: "
+            f"donor={donor_count:,}, acceptor={acceptor_count:,}"
+        )
+
+        base_target = min(donor_count, acceptor_count)
+        if max_per_class is not None:
+            base_target = min(base_target, max_per_class)
+        negative_target = max(base_target, int(base_target * negative_pool_ratio))
+
+        negatives = sample_negative_candidates(
+            sites,
+            transcript_bounds,
+            fasta,
+            annotated_any,
+            annotated_same,
+            max_window,
+            negative_target,
+            negative_radius,
+            negative_attempts,
+            rng,
+        )
+        print(f"Negative candidates before shared window filtering: {len(negatives):,}")
+        negatives = filter_negative_candidates(negatives, fasta, windows, max_n_ratio)
+        print(f"Negative candidates after shared window filtering: {len(negatives):,}")
+
+        selected_sites, selected_negatives, class_count = select_balanced_examples(
+            sites,
+            negatives,
+            max_per_class,
+            rng,
+        )
+        if class_count == 0:
+            raise ValueError("No balanced real splice-site examples could be selected from the provided resources.")
+        print(f"Selected shared centers per class: {class_count:,}")
+
+        outputs: dict[int, list[dict[str, object]]] = {}
+        for window in windows:
+            rows = build_rows_for_window(selected_sites, selected_negatives, fasta, window, rna)
+            outputs[window] = rows
+            write_window_and_splits(rows, window, out_dir, split_dir, full_columns)
+            per_label = {label: sum(1 for row in rows if row["label"] == label) for label in LABELS}
+            print(f"Wrote real pm{window}: {len(rows):,} rows; labels={per_label}")
+        return outputs
+    finally:
+        fasta.close()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--genome", type=Path, default=PROJECT_ROOT / "data/raw/genome.fa")
     parser.add_argument("--gtf", type=Path, default=PROJECT_ROOT / "data/raw/gencode.gtf")
     parser.add_argument("--out-dir", type=Path, default=SHARED_PROCESSED_DIR)
+    parser.add_argument("--split-dir", type=Path, default=SHARED_SPLIT_DIR)
     parser.add_argument("--windows", type=int, nargs="+", default=[50, 100, 200, 400])
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-n-ratio", type=float, default=0.05)
     parser.add_argument("--negative-radius", type=int, default=5000)
     parser.add_argument("--negative-pool-ratio", type=float, default=1.5)
     parser.add_argument("--negative-attempts", type=int, default=80)
-    parser.add_argument("--max-per-class", type=int, default=None)
+    parser.add_argument("--max-per-class", type=int, default=1000)
     parser.add_argument("--protein-coding-only", action="store_true")
-    parser.add_argument("--dna", action="store_true", help="Keep T instead of converting DNA to RNA U.")
+    parser.add_argument("--rna", dest="rna", action="store_true", help="Convert DNA T to RNA U in output sequences.")
+    parser.add_argument("--dna", dest="rna", action="store_false", help="Keep DNA A/C/G/T output sequences. This is the default.")
+    parser.set_defaults(rna=False)
     parser.add_argument(
         "--chroms",
         default=",".join(STANDARD_EXPERIMENT_CHROMS),
@@ -631,78 +765,26 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    rng = random.Random(args.seed)
-    max_window = max(args.windows)
-    allowed_chroms = None if args.all_chroms else parse_chroms(args.chroms)
-
-    fasta = FastaIndex(args.genome)
-    try:
-        transcripts = read_transcripts(args.gtf, fasta, args.protein_coding_only, args.gtf_line_limit)
-        print(f"Loaded transcripts with exons: {len(transcripts):,}")
-
-        sites, transcript_bounds, annotated_any, annotated_same = build_positive_sites(transcripts)
-        donor_count = sum(1 for site in sites if site.label == 0)
-        acceptor_count = sum(1 for site in sites if site.label == 1)
-        print(f"Annotated sites after de-duplication: donor={donor_count:,}, acceptor={acceptor_count:,}")
-
-        sites = filter_positive_sites(
-            sites,
-            fasta,
-            args.windows,
-            args.max_n_ratio,
-            allowed_chroms,
-            not args.keep_noncanonical_positives,
-        )
-        donor_count = sum(1 for site in sites if site.label == 0)
-        acceptor_count = sum(1 for site in sites if site.label == 1)
-        print(
-            "Positive sites after experiment filtering: "
-            f"donor={donor_count:,}, acceptor={acceptor_count:,}"
-        )
-
-        base_target = min(donor_count, acceptor_count)
-        if args.max_per_class is not None:
-            base_target = min(base_target, args.max_per_class)
-        negative_target = max(base_target, int(base_target * args.negative_pool_ratio))
-
-        negatives = sample_negative_candidates(
-            sites,
-            transcript_bounds,
-            fasta,
-            annotated_any,
-            annotated_same,
-            max_window,
-            negative_target,
-            args.negative_radius,
-            args.negative_attempts,
-            rng,
-        )
-        print(f"Negative candidates before shared window filtering: {len(negatives):,}")
-        negatives = filter_negative_candidates(negatives, fasta, args.windows, args.max_n_ratio)
-        print(f"Negative candidates after shared window filtering: {len(negatives):,}")
-
-        selected_sites, selected_negatives, class_count = select_balanced_examples(
-            sites,
-            negatives,
-            args.max_per_class,
-            rng,
-        )
-        print(f"Selected shared centers per class: {class_count:,}")
-
-        for window in args.windows:
-            rows = build_rows_for_window(
-                selected_sites,
-                selected_negatives,
-                fasta,
-                window,
-                not args.dna,
-            )
-            out_path = args.out_dir / f"splice_sites_pm{window}.csv"
-            write_csv(out_path, rows, args.full_columns)
-            per_label = {label: sum(1 for row in rows if row["label"] == label) for label in LABELS}
-            print(f"Wrote {out_path}: {len(rows):,} rows; labels={per_label}")
-    finally:
-        fasta.close()
+    build_and_write_real(
+        genome_path=args.genome,
+        gtf_path=args.gtf,
+        out_dir=args.out_dir,
+        split_dir=args.split_dir,
+        windows=args.windows,
+        seed=args.seed,
+        max_n_ratio=args.max_n_ratio,
+        negative_radius=args.negative_radius,
+        negative_pool_ratio=args.negative_pool_ratio,
+        negative_attempts=args.negative_attempts,
+        max_per_class=args.max_per_class,
+        protein_coding_only=args.protein_coding_only,
+        rna=args.rna,
+        chroms=args.chroms,
+        all_chroms=args.all_chroms,
+        keep_noncanonical_positives=args.keep_noncanonical_positives,
+        full_columns=args.full_columns,
+        gtf_line_limit=args.gtf_line_limit,
+    )
 
 
 if __name__ == "__main__":
