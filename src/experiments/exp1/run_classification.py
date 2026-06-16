@@ -65,9 +65,8 @@ def write_report(path: Path, data_dir: Path, train_summary: pd.DataFrame, test_m
         f"Data directory: `{data_dir}`",
         "",
         "The main result uses the small split train/valid/test = 855/120/285.",
-        "RNA-FM/RNABERT rows are frozen-encoder models when local weights are present and",
-        "deterministic proxy embeddings otherwise. SpliceAI is an optional real-tool baseline",
-        "with a proxy fallback, evaluated only on the small test split.",
+        "RNA-FM/RNABERT rows require real local frozen encoder weights under `models/hf/`.",
+        "Only real-model rows are reported in this run.",
         "",
         "## Validation summary",
         "",
@@ -143,7 +142,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint-dir", type=Path, default=PROJECT_ROOT / "results/checkpoints/experiment_1")
     parser.add_argument("--report-path", type=Path, default=PROJECT_ROOT / "reports/experiment_1.md")
     parser.add_argument("--config", type=Path, default=CONFIG_ROOT / "exp1_classification.yaml")
-    parser.add_argument("--models", default="cnn,rnafm,rnabert,spliceai")
+    parser.add_argument("--models", default="cnn,rnafm,rnabert")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-rows", type=int, default=855)
     parser.add_argument("--max-valid-rows", type=int, default=120)

@@ -28,7 +28,7 @@ def build_sqtl_smoke(output: Path = EXP3_DATA_DIR / "gtex_sqtl_variants_smoke.cs
                 "variant_type": variant["variant_type"],
                 "wt_sequence": variant["wt_sequence"],
                 "mut_sequence": variant["mut_sequence"],
-                "data_source": "gtex_sqtl_smoke_case_study_proxy",
+                "data_source": "gtex_sqtl_format_smoke_from_artificial_variants",
             }
         )
     frame = pd.DataFrame(payload)

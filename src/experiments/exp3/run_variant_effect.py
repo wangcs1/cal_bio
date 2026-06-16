@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
@@ -18,11 +20,7 @@ from src.data.build_clinvar_variant_dataset import build_clinvar_smoke
 from src.data.build_synthetic_splice_dataset import build_and_write
 from src.data.build_sqtl_variant_dataset import build_sqtl_smoke
 from src.data.build_variant_dataset import build_and_write_variants
-from src.models.maxentscan_wrapper import maxentscan_variant_delta
-from src.models.mmsplice_wrapper import mmsplice_variant_delta
-from src.models.pangolin_wrapper import pangolin_variant_delta
-from src.models.simple_splice_models import make_model_suite, pseudo_likelihood_proxy_score, zero_shot_embedding_distance
-from src.models.spliceai_wrapper import spliceai_variant_delta
+from src.experiments.exp1.common import make_model
 from src.utils import (
     BASES,
     CONFIG_ROOT,
@@ -30,10 +28,8 @@ from src.utils import (
     EXP3_FIGURES_DIR,
     EXP3_TABLES_DIR,
     PROJECT_ROOT,
-    acceptor_consensus_score,
     binary_ranking_metrics,
     calibration_bins,
-    donor_consensus_score,
     ensure_dirs,
     load_config,
     mutate_base,
@@ -43,6 +39,75 @@ from src.utils import (
     topk_enrichment_curve,
     write_dataframe,
 )
+
+
+REAL_MODEL_KEYS = ["cnn", "rnafm", "rnabert"]
+EXTERNAL_TOOL_ENV_PYTHON = Path(os.environ.get("CALBIO_SPLICE_TOOLS_PYTHON", r"C:\Users\Wangcs\miniconda3\envs\calbio-splice-tools\python.exe"))
+PANGOLIN_ENV_PYTHON = Path(os.environ.get("CALBIO_PANGOLIN_PYTHON", sys.executable))
+
+
+def markdown_table(frame: pd.DataFrame, columns: list[str] | None = None, max_rows: int = 24) -> str:
+    if frame.empty:
+        return "_Not generated yet._"
+    subset = frame.copy()
+    if columns is not None:
+        subset = subset[[column for column in columns if column in subset.columns]]
+    subset = subset.head(max_rows)
+    for column in subset.columns:
+        if pd.api.types.is_float_dtype(subset[column]):
+            subset[column] = subset[column].map(lambda value: "" if pd.isna(value) else f"{value:.4f}")
+    return subset.to_markdown(index=False)
+
+
+def write_report(
+    path: Path,
+    variant_counts: pd.DataFrame,
+    metrics: pd.DataFrame,
+    variant_summary: pd.DataFrame,
+    clinvar: pd.DataFrame,
+    sqtl: pd.DataFrame,
+) -> None:
+    ensure_dirs(path.parent)
+    lines = [
+        "# Experiment 3: Aberrant Splicing Variant Effects",
+        "",
+        "This run scores artificial SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
+        "External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.",
+        "",
+        "## Variant Set",
+        "",
+        markdown_table(variant_counts, ["variant_type", "label_name", "rows"]),
+        "",
+        "## 3A Artificial Variant Ranking",
+        "",
+        markdown_table(metrics, ["model", "source", "auroc", "auprc", "top_k", "top_k_recall", "enrichment_at_k", "variants"]),
+        "",
+        "## By Variant Type",
+        "",
+        markdown_table(variant_summary, ["model", "source", "variant_type", "mean_score", "median_score", "rows", "positive_rate"]),
+        "",
+        "## Smoke Inputs",
+        "",
+        "ClinVar-format and sQTL-format smoke tables are derived from the artificial variant set to validate input/output plumbing.",
+        "They are not full ClinVar or GTEx benchmarks.",
+        "",
+        "ClinVar-format smoke metrics:",
+        "",
+        markdown_table(clinvar, ["model", "auroc", "auprc", "variants"]),
+        "",
+        f"sQTL-format rows: {len(sqtl)}",
+        "",
+        "Outputs:",
+        "",
+        "- `results/experiment_3/tables/experiment_3A_artificial_variant_scores.csv`",
+        "- `results/experiment_3/tables/experiment_3A_artificial_variant_metrics.csv`",
+        "- `results/experiment_3/tables/variant_effect_stratified_by_type.csv`",
+        "- `results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`",
+        "- `results/experiment_3/tables/experiment_3C_sqtl_case_study.csv`",
+        "- `results/experiment_3/figures/exp3_variant_auroc.png`",
+        "- `results/experiment_3/figures/exp3_variant_auprc.png`",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def ensure_inputs() -> None:
@@ -58,7 +123,7 @@ def train_models(random_state: int) -> list[object]:
     train_full = pd.concat([train, valid], ignore_index=True)
     x_train = train_full["sequence"].astype(str).tolist()
     y_train = train_full["label"].astype(int).to_numpy()
-    models = make_model_suite(random_state=random_state)
+    models = [make_model(model_key, random_state) for model_key in REAL_MODEL_KEYS]
     for model in models:
         model.fit(x_train, y_train)
     return models
@@ -72,27 +137,6 @@ def delta_from_proba(row: pd.Series, wt_proba: np.ndarray, mut_proba: np.ndarray
     if "gain" in variant_type:
         return float(mut_proba[target] - wt_proba[target])
     return float(np.max(np.abs(mut_proba[:2] - wt_proba[:2])))
-
-
-def maxent_proxy_delta(row: pd.Series) -> float:
-    wt = str(row["wt_sequence"])
-    mut = str(row["mut_sequence"])
-    target = int(row["target_class"])
-    variant_type = str(row["variant_type"])
-    if target == 0:
-        wt_score = donor_consensus_score(wt)
-        mut_score = donor_consensus_score(mut)
-    elif target == 1:
-        wt_score = acceptor_consensus_score(wt)
-        mut_score = acceptor_consensus_score(mut)
-    else:
-        wt_score = max(donor_consensus_score(wt), acceptor_consensus_score(wt))
-        mut_score = max(donor_consensus_score(mut), acceptor_consensus_score(mut))
-    if variant_type.endswith("loss"):
-        return float(wt_score - mut_score)
-    if "gain" in variant_type:
-        return float(mut_score - wt_score)
-    return float(abs(mut_score - wt_score))
 
 
 def score_variants(models: list[object], variants: pd.DataFrame) -> pd.DataFrame:
@@ -112,6 +156,7 @@ def score_variants(models: list[object], variants: pd.DataFrame) -> pd.DataFrame
                     "label_name": variant["label_name"],
                     "target_class": int(variant["target_class"]),
                     "model": model.name,
+                    "source": "trained_classifier",
                     "ref_score": float(wt_proba[idx, int(variant["target_class"])]),
                     "alt_score": float(mut_proba[idx, int(variant["target_class"])]),
                     "delta_score": delta_from_proba(variant, wt_proba[idx], mut_proba[idx]),
@@ -125,98 +170,73 @@ def score_variants(models: list[object], variants: pd.DataFrame) -> pd.DataFrame
                 }
             )
 
-    for mode, model_name in [
-        ("rnafm", "RNA-FM zero-shot embedding distance"),
-        ("rnabert", "RNABERT zero-shot token distance"),
-    ]:
-        for _, variant in variants.iterrows():
-            distance = zero_shot_embedding_distance(str(variant["wt_sequence"]), str(variant["mut_sequence"]), mode)
-            rows.append(
-                {
-                    "variant_id": variant["variant_id"],
-                    "variant_type": variant["variant_type"],
-                    "label": int(variant["label"]),
-                    "label_name": variant["label_name"],
-                    "target_class": int(variant["target_class"]),
-                    "model": model_name,
-                    "ref_score": 0.0,
-                    "alt_score": distance,
-                    "delta_score": distance,
-                    "impact_score": distance,
-                    "wt_donor": np.nan,
-                    "wt_acceptor": np.nan,
-                    "wt_non_splice": np.nan,
-                    "mut_donor": np.nan,
-                    "mut_acceptor": np.nan,
-                    "mut_non_splice": np.nan,
-                }
-            )
-            ref_pll = pseudo_likelihood_proxy_score(str(variant["wt_sequence"]), mode)
-            alt_pll = pseudo_likelihood_proxy_score(str(variant["mut_sequence"]), mode)
-            delta = abs(alt_pll - ref_pll)
-            rows.append(
-                {
-                    "variant_id": variant["variant_id"],
-                    "variant_type": variant["variant_type"],
-                    "label": int(variant["label"]),
-                    "label_name": variant["label_name"],
-                    "target_class": int(variant["target_class"]),
-                    "model": model_name.replace("embedding distance", "pseudo-likelihood").replace("token distance", "pseudo-likelihood"),
-                    "ref_score": ref_pll,
-                    "alt_score": alt_pll,
-                    "delta_score": delta,
-                    "impact_score": delta,
-                    "wt_donor": np.nan,
-                    "wt_acceptor": np.nan,
-                    "wt_non_splice": np.nan,
-                    "mut_donor": np.nan,
-                    "mut_acceptor": np.nan,
-                    "mut_non_splice": np.nan,
-                }
-            )
-
-    tool_fns = [
-        ("MaxEntScan optional tool (proxy fallback)", maxentscan_variant_delta),
-        ("MMSplice optional tool (proxy fallback)", mmsplice_variant_delta),
-        ("SpliceAI optional real tool (proxy fallback)", spliceai_variant_delta),
-        ("Pangolin optional tool (small case-study proxy)", pangolin_variant_delta),
-    ]
-    for _, variant in variants.iterrows():
-        for model_name, fn in tool_fns:
-            ref_score, alt_score, delta = fn(
-                str(variant["wt_sequence"]),
-                str(variant["mut_sequence"]),
-                int(variant["target_class"]),
-                str(variant["variant_type"]),
-            )
-            rows.append(
-                {
-                    "variant_id": variant["variant_id"],
-                    "variant_type": variant["variant_type"],
-                    "label": int(variant["label"]),
-                    "label_name": variant["label_name"],
-                    "target_class": int(variant["target_class"]),
-                    "model": model_name,
-                    "ref_score": ref_score,
-                    "alt_score": alt_score,
-                    "delta_score": delta,
-                    "impact_score": delta,
-                    "wt_donor": np.nan,
-                    "wt_acceptor": np.nan,
-                    "wt_non_splice": np.nan,
-                    "mut_donor": np.nan,
-                    "mut_acceptor": np.nan,
-                    "mut_non_splice": np.nan,
-                }
-            )
     return pd.DataFrame(rows)
+
+
+def run_external_tool_scores(variants_path: Path) -> pd.DataFrame:
+    out_dir = EXP3_DATA_DIR / "external_tools"
+    out_path = out_dir / "external_splice_tools_variant_scores.csv"
+    python_exe = EXTERNAL_TOOL_ENV_PYTHON
+    if not python_exe.exists():
+        raise FileNotFoundError(
+            f"External splice tool Python not found: {python_exe}. "
+            "Set CALBIO_SPLICE_TOOLS_PYTHON to a Python environment with spliceai/mmsplice/maxentpy."
+        )
+    subprocess.run(
+        [
+            str(python_exe),
+            str(PROJECT_ROOT / "scripts/run_real_external_tools.py"),
+            "--variants",
+            str(variants_path),
+            "--out",
+            str(out_dir),
+        ],
+        cwd=PROJECT_ROOT,
+        check=True,
+    )
+    pangolin_out = out_dir / "pangolin_sequence_variant_scores.csv"
+    subprocess.run(
+        [
+            str(PANGOLIN_ENV_PYTHON),
+            str(PROJECT_ROOT / "scripts/run_real_pangolin_sequence.py"),
+            "--variants",
+            str(variants_path),
+            "--out",
+            str(out_dir),
+        ],
+        cwd=PROJECT_ROOT,
+        check=True,
+    )
+    scores = pd.concat([read_csv(out_path), read_csv(pangolin_out)], ignore_index=True, sort=False)
+    scores = scores.rename(
+        columns={
+            "ref_donor": "wt_donor",
+            "ref_acceptor": "wt_acceptor",
+            "ref_non_splice": "wt_non_splice",
+            "alt_donor": "mut_donor",
+            "alt_acceptor": "mut_acceptor",
+            "alt_non_splice": "mut_non_splice",
+        }
+    )
+    scores["delta_score"] = scores["impact_score"]
+    target_cols = {0: "donor", 1: "acceptor", 2: "non_splice"}
+    ref_scores = []
+    alt_scores = []
+    for _, row in scores.iterrows():
+        suffix = target_cols[int(row["target_class"])]
+        ref_scores.append(float(row[f"wt_{suffix}"]))
+        alt_scores.append(float(row[f"mut_{suffix}"]))
+    scores["ref_score"] = ref_scores
+    scores["alt_score"] = alt_scores
+    return scores
 
 
 def summarize_metrics(scores: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for model, group in scores.groupby("model"):
         metrics = binary_ranking_metrics(group["label"], group["impact_score"], k_fraction=0.1)
-        rows.append({"model": model, **metrics, "variants": len(group)})
+        source = str(group["source"].iloc[0]) if "source" in group.columns else "unknown"
+        rows.append({"model": model, "source": source, **metrics, "variants": len(group)})
     return pd.DataFrame(rows).sort_values("auprc", ascending=False)
 
 
@@ -230,20 +250,15 @@ def summarize_topk(scores: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_variant_types(scores: pd.DataFrame) -> pd.DataFrame:
-    top_models = [
-        "RNABERT zero-shot token distance",
-        "RNA-FM zero-shot embedding distance",
-        "SpliceAI signal proxy",
-        "MaxEntScan optional tool (proxy fallback)",
-    ]
     rows = []
-    for model, model_frame in scores[scores["model"].isin(top_models)].groupby("model"):
+    for model, model_frame in scores.groupby("model"):
         for variant_type, group in model_frame.groupby("variant_type"):
             labels = (group["label_name"] == "splice_altering").astype(int).to_numpy()
             score = group["impact_score"].to_numpy()
             rows.append(
                 {
                     "model": model,
+                    "source": str(model_frame["source"].iloc[0]) if "source" in model_frame.columns else "unknown",
                     "variant_type": variant_type,
                     "mean_score": float(np.mean(score)),
                     "median_score": float(np.median(score)),
@@ -257,26 +272,162 @@ def summarize_variant_types(scores: pd.DataFrame) -> pd.DataFrame:
 def plot_variant_type_summary(summary: pd.DataFrame, out_dir: Path) -> None:
     if summary.empty:
         return
-    variant_order = summary["variant_type"].drop_duplicates().tolist()
-    model_order = summary["model"].drop_duplicates().tolist()
+    preferred_variants = ["donor_loss", "acceptor_loss", "donor_gain", "acceptor_gain", "neutral_far_snv"]
+    available_variants = summary["variant_type"].drop_duplicates().tolist()
+    variant_order = [variant for variant in preferred_variants if variant in available_variants]
+    variant_order.extend([variant for variant in available_variants if variant not in variant_order])
+    preferred_models = [
+        "CNN baseline (PyTorch Conv1D)",
+        "RNA-FM frozen encoder + MLP",
+        "RNABERT frozen encoder + MLP",
+        "SpliceAI real sequence model",
+        "Pangolin real sequence model",
+        "MMSplice real sequence model",
+        "MaxEntScan real local score",
+    ]
+    available_models = summary["model"].drop_duplicates().tolist()
+    model_order = [model for model in preferred_models if model in available_models]
+    model_order.extend([model for model in available_models if model not in model_order])
+    colors = {
+        "CNN baseline (PyTorch Conv1D)": "#4C78A8",
+        "RNA-FM frozen encoder + MLP": "#F58518",
+        "RNABERT frozen encoder + MLP": "#54A24B",
+        "SpliceAI real sequence model": "#B279A2",
+        "Pangolin real sequence model": "#72B7B2",
+        "MMSplice real sequence model": "#E45756",
+        "MaxEntScan real local score": "#9D755D",
+    }
+    short_names = {
+        "CNN baseline (PyTorch Conv1D)": "CNN baseline",
+        "RNA-FM frozen encoder + MLP": "RNA-FM frozen",
+        "RNABERT frozen encoder + MLP": "RNABERT frozen",
+        "SpliceAI real sequence model": "SpliceAI real",
+        "Pangolin real sequence model": "Pangolin real",
+        "MMSplice real sequence model": "MMSplice real",
+        "MaxEntScan real local score": "MaxEntScan real",
+    }
+    variant_labels = {
+        "donor_loss": "Donor loss",
+        "acceptor_loss": "Acceptor loss",
+        "donor_gain": "Donor gain",
+        "acceptor_gain": "Acceptor gain",
+        "neutral_far_snv": "Neutral far SNV",
+    }
+    pivot = (
+        summary.pivot_table(index="variant_type", columns="model", values="mean_score", aggfunc="mean")
+        .reindex(variant_order)
+        .fillna(0.0)
+    )
     x = np.arange(len(variant_order))
     width = 0.8 / max(1, len(model_order))
-    fig, ax = plt.subplots(figsize=(10, 4.8))
+    fig, (ax_bar, ax_line) = plt.subplots(
+        2,
+        1,
+        figsize=(12.2, 8.1),
+        gridspec_kw={"height_ratios": [2.25, 1.0], "hspace": 0.34},
+        sharex=True,
+    )
+    fig.patch.set_facecolor("#fbf7ef")
+    for ax in (ax_bar, ax_line):
+        ax.set_facecolor("#fffdf8")
+        ax.grid(axis="y", color="#d9cfc0", alpha=0.58, linewidth=0.8)
+        ax.grid(axis="x", visible=False)
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+        ax.spines["left"].set_color("#817768")
+        ax.spines["bottom"].set_color("#817768")
+        ax.tick_params(colors="#202124", labelsize=9)
+
+    max_value = float(np.nanmax(pivot[model_order].to_numpy())) if model_order else 0.0
+    min_value = float(np.nanmin(pivot[model_order].to_numpy())) if model_order else 0.0
+    label_threshold = max(0.02, max_value * 0.045)
     for idx, model in enumerate(model_order):
-        values = [
-            float(summary[(summary["model"] == model) & (summary["variant_type"] == variant_type)]["mean_score"].iloc[0])
-            if not summary[(summary["model"] == model) & (summary["variant_type"] == variant_type)].empty
-            else 0.0
-            for variant_type in variant_order
-        ]
-        ax.bar(x - 0.4 + width / 2 + idx * width, values, width, label=model)
-    ax.set_xticks(x, variant_order, rotation=25, ha="right")
-    ax.set_ylabel("Mean impact score")
-    ax.set_title("Variant effect scores by perturbation type")
-    ax.grid(axis="y", alpha=0.25)
-    ax.legend(fontsize=7)
-    fig.tight_layout()
-    fig.savefig(out_dir / "variant_effect_stratified_by_type.png", dpi=180)
+        values = pivot[model].to_numpy(dtype=float)
+        positions = x - 0.4 + width / 2 + idx * width
+        bars = ax_bar.bar(
+            positions,
+            values,
+            width,
+            label=short_names.get(model, model),
+            color=colors.get(model, "#4C78A8"),
+            edgecolor="#2f2a24",
+            linewidth=0.45,
+            alpha=0.94,
+        )
+        for bar, value in zip(bars, values):
+            if abs(value) < label_threshold:
+                continue
+            va = "bottom" if value >= 0 else "top"
+            y_offset = 0.012 if value >= 0 else -0.012
+            ax_bar.text(
+                bar.get_x() + bar.get_width() / 2,
+                value + y_offset,
+                f"{value:.2f}",
+                ha="center",
+                va=va,
+                fontsize=7,
+                color="#2f2a24",
+                rotation=90,
+            )
+
+        positive_response = np.maximum(values, 0.0)
+        scale = float(np.max(positive_response))
+        normalized = positive_response / scale if scale > 0 else positive_response
+        ax_line.plot(
+            x,
+            normalized,
+            marker="o",
+            markersize=4.6,
+            linewidth=2.0,
+            label=short_names.get(model, model),
+            color=colors.get(model, "#4C78A8"),
+            alpha=0.9 if scale > 0 else 0.45,
+        )
+    ax_bar.axhline(0, color="#2f2a24", linewidth=0.8, alpha=0.62)
+    y_pad = max(0.035, (max_value - min_value) * 0.18)
+    ax_bar.set_ylim(min(-0.03, min_value - y_pad * 0.35), max_value + y_pad)
+    ax_bar.set_ylabel("Mean impact score", fontsize=10, fontweight="bold", color="#202124")
+    ax_bar.set_title("Variant effect scores by perturbation type", fontsize=15, fontweight="bold", loc="left", color="#202124")
+    ax_bar.text(
+        0.01,
+        0.93,
+        "Bars compare absolute mean delta scores across perturbation classes.",
+        transform=ax_bar.transAxes,
+        ha="left",
+        va="top",
+        color="#6b6258",
+        fontsize=8.5,
+        bbox={"facecolor": "#fffdf8", "edgecolor": "none", "alpha": 0.82, "pad": 2.5},
+    )
+    ax_line.set_ylabel("Within-model\nnormalized", fontsize=9, fontweight="bold", color="#202124")
+    ax_line.set_ylim(-0.04, 1.08)
+    ax_line.set_yticks([0.0, 0.5, 1.0])
+    ax_line.text(
+        0.01,
+        0.94,
+        "Lower panel normalizes each model to its own strongest positive response; use it for pattern, not magnitude.",
+        transform=ax_line.transAxes,
+        ha="left",
+        va="top",
+        color="#6b6258",
+        fontsize=8.2,
+        bbox={"facecolor": "#fffdf8", "edgecolor": "none", "alpha": 0.82, "pad": 2.5},
+    )
+    ax_line.set_xticks(x, [variant_labels.get(variant, variant) for variant in variant_order], rotation=18, ha="right")
+    handles, labels = ax_bar.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=min(4, max(1, len(labels))),
+        frameon=True,
+        fontsize=8,
+        bbox_to_anchor=(0.5, 0.005),
+        facecolor="#fffdf8",
+        edgecolor="#d9cfc0",
+    )
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.93, bottom=0.17)
+    fig.savefig(out_dir / "variant_effect_stratified_by_type.png", dpi=220)
     plt.close(fig)
 
 
@@ -317,12 +468,7 @@ def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
 
 
 def plot_delta_boxplot(scores: pd.DataFrame, out_dir: Path) -> None:
-    selected_models = [
-        "SpliceAI signal proxy",
-        "RNA-FM frozen k-mer + MLP",
-        "RNABERT frozen token + MLP",
-        "MaxEntScan optional tool (proxy fallback)",
-    ]
+    selected_models = scores["model"].drop_duplicates().tolist()
     subset = scores[scores["model"].isin(selected_models)].copy()
     fig, axes = plt.subplots(1, len(selected_models), figsize=(14, 4.4), sharey=True)
     for ax, model in zip(axes, selected_models):
@@ -376,7 +522,7 @@ def plot_saturation(matrix: pd.DataFrame, out_path: Path, title: str) -> None:
 
 def run_saturation(models: list[object], out_tables: Path, out_figures: Path) -> None:
     test = read_csv(shared_split_file("test_pm200.csv"))
-    model = next(model for model in models if model.name == "SpliceAI signal proxy")
+    model = models[0]
     donor = test[test["label"].astype(int) == 0].iloc[0]
     acceptor = test[test["label"].astype(int) == 1].iloc[0]
     donor_matrix = saturation_matrix(model, str(donor["sequence"]), 0)
@@ -400,7 +546,9 @@ def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> di
     ensure_inputs()
     variants = read_csv(exp3_data_file("artificial_variant_effect.csv"))
     models = train_models(random_state=random_state)
-    scores = score_variants(models, variants)
+    classifier_scores = score_variants(models, variants)
+    external_scores = run_external_tool_scores(exp3_data_file("artificial_variant_effect.csv"))
+    scores = pd.concat([classifier_scores, external_scores], ignore_index=True, sort=False)
     metrics = summarize_metrics(scores)
     topk = summarize_topk(scores)
     variant_summary = summarize_variant_types(scores)
@@ -416,6 +564,13 @@ def run(output_tables: Path, output_figures: Path, random_state: int = 42) -> di
     run_saturation(models, output_tables, output_figures)
     clinvar = run_clinvar_smoke(output_tables, output_figures, models)
     sqtl = run_sqtl_case_study(output_tables, models)
+    variant_counts = (
+        variants.groupby(["variant_type", "label_name"], as_index=False)
+        .size()
+        .rename(columns={"size": "rows"})
+        .sort_values("variant_type")
+    )
+    write_report(PROJECT_ROOT / "reports/experiment_3.md", variant_counts, metrics, variant_summary, clinvar, sqtl)
     return {
         "scores": scores,
         "metrics": metrics,
@@ -448,7 +603,7 @@ def run_clinvar_smoke(output_tables: Path, output_figures: Path, models: list[ob
 def run_sqtl_case_study(output_tables: Path, models: list[object]) -> pd.DataFrame:
     sqtl = build_sqtl_smoke()
     scored = []
-    model = next(model for model in models if model.name == "SpliceAI signal proxy")
+    model = models[0]
     for _, row in sqtl.iterrows():
         wt = model.predict_proba([str(row["wt_sequence"])])[0]
         mut = model.predict_proba([str(row["mut_sequence"])])[0]

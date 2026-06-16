@@ -19,7 +19,7 @@ def check_foundation_models() -> list[dict[str, str]]:
             {
                 "model": name,
                 "path": str(path),
-                "status": "present" if path.exists() else "optional / missing; proxy fallback will be used",
+                "status": "present" if path.exists() else "missing; real-model pipeline will fail until downloaded",
             }
         )
     return rows

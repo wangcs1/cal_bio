@@ -49,8 +49,9 @@ Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 The main C Part pipeline uses the current small split, not a million-scale full dataset.
 Default split size is train/valid/test = 855/120/285 when the synthetic builder is run with
-the repository defaults. Large files under `data/raw/` and pretrained weights under
-`models/hf/` are optional resources for smoke tests or case studies.
+the repository defaults. This run reports real-model rows only. Experiments 1 and 2 use
+CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
+includes real external splice tools: SpliceAI, Pangolin, MMSplice, and MaxEntScan.
 
 ## Data
 
@@ -62,21 +63,22 @@ Artificial variant summary:
 
 ## Experiment 1
 
-Splice-site donor/acceptor/non-splice classification. The table includes proxy/fallback rows
-and optional-real-tool rows where available.
+Splice-site donor/acceptor/non-splice classification with the real-model rows only.
 
 {markdown_table(exp1)}
 
 ## Experiment 2
 
-Multi-scale context, hard-negative, rare motif, tissue usage, regulatory motif, and topology
-analyses. Pangolin/GTEx/Borzoi/AlphaGenome outputs are small case studies, not full benchmarks.
+Multi-scale context, hard-negative, and rare-motif stress tests using the same real-model
+set.
 
 {markdown_table(exp2)}
 
 ## Experiment 3
 
-Artificial variant effect prediction plus ClinVar/sQTL smoke case studies.
+Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
+main artificial-variant table includes both trained project models and real external
+splice tools; no proxy/fallback rows are reported.
 
 {markdown_table(exp3)}
 
@@ -87,8 +89,6 @@ Artificial variant effect prediction plus ClinVar/sQTL smoke case studies.
 - `reports/experiment_3.md`
 - `reports/data_qc.md`
 - `reports/resource_setup.md`
-- `reports/model_cards.md`
-- `reports/experiment_log.md`
 """
 
     out = REPORTS_DIR / "c_part_combined_report.md"

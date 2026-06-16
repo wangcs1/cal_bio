@@ -515,10 +515,10 @@ def _build_junction_topology_case_study() -> pd.DataFrame:
 def run_variant_stratified_summary(tables: Path, figures: Path) -> pd.DataFrame:
     scores = pd.read_csv(EXP3_TABLES_DIR / "experiment_3A_artificial_variant_scores.csv")
     top_models = [
-        "RNABERT zero-shot token distance",
-        "RNA-FM zero-shot embedding distance",
-        "SpliceAI signal proxy",
-        "MaxEntScan optional tool (proxy fallback)",
+        "RNABERT frozen encoder + MLP",
+        "RNA-FM frozen encoder + MLP",
+        "SpliceAI real sequence model",
+        "MaxEntScan real local score",
     ]
     rows = []
     for model, model_frame in scores[scores["model"].isin(top_models)].groupby("model"):

@@ -17,7 +17,7 @@ def build_clinvar_smoke(output: Path = EXP3_DATA_DIR / "clinvar_splicing_variant
     controls = variants[variants["label"].astype(int) == 0].head(rows - len(positives)).copy()
     frame = pd.concat([positives, controls], ignore_index=True)
     frame["clinvar_label_source"] = frame["label"].map({1: "splice-related synthetic positive", 0: "matched neutral control"})
-    frame["data_source"] = "clinvar_smoke_case_study_proxy"
+    frame["data_source"] = "clinvar_format_smoke_from_artificial_variants"
     raw_hint = PROJECT_ROOT / "data/raw/clinvar_smoke.csv"
     frame["raw_resource_hint"] = str(raw_hint) if raw_hint.exists() else "optional data/raw/clinvar_smoke.csv not required"
     write_dataframe(output, frame)

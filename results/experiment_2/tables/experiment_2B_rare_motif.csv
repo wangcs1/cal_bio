@@ -1,9 +1,7 @@
 model,motif_type,rows,mean_target_probability,accuracy,macro_f1,data_source
-CNN motif baseline,rare_AT-AC_acceptor_proxy,40,0.002629381976791753,0.0,0.0,synthetic rare-motif small case study
-CNN motif baseline,rare_GC-AG_donor,40,0.9942127138793463,1.0,1.0,synthetic rare-motif small case study
-RNA-FM frozen k-mer + MLP,rare_AT-AC_acceptor_proxy,40,0.9925572716080776,1.0,1.0,synthetic rare-motif small case study
-RNA-FM frozen k-mer + MLP,rare_GC-AG_donor,40,0.584234592471893,0.6,0.375,synthetic rare-motif small case study
-RNABERT frozen token + MLP,rare_AT-AC_acceptor_proxy,40,0.9962951296990502,1.0,1.0,synthetic rare-motif small case study
-RNABERT frozen token + MLP,rare_GC-AG_donor,40,0.986699089690666,1.0,1.0,synthetic rare-motif small case study
-SpliceAI signal proxy,rare_AT-AC_acceptor_proxy,40,0.3938314684998891,0.0,0.0,synthetic rare-motif small case study
-SpliceAI signal proxy,rare_GC-AG_donor,40,0.223889137740752,0.0,0.0,synthetic rare-motif small case study
+CNN baseline (PyTorch Conv1D),rare_AT-AC_acceptor,40,0.3587063025683165,0.05,0.047619047619047616,synthetic rare-motif small case study
+CNN baseline (PyTorch Conv1D),rare_GC-AG_donor,40,0.915323743224144,1.0,1.0,synthetic rare-motif small case study
+RNA-FM frozen encoder + MLP,rare_AT-AC_acceptor,40,0.9711498114061566,1.0,1.0,synthetic rare-motif small case study
+RNA-FM frozen encoder + MLP,rare_GC-AG_donor,40,0.721059750861183,0.775,0.43661971830985913,synthetic rare-motif small case study
+RNABERT frozen encoder + MLP,rare_AT-AC_acceptor,40,0.9358530612603297,0.975,0.4936708860759494,synthetic rare-motif small case study
+RNABERT frozen encoder + MLP,rare_GC-AG_donor,40,0.5851133628637417,0.55,0.3548387096774194,synthetic rare-motif small case study

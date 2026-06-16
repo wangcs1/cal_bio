@@ -9,38 +9,22 @@
 
 ## RNA-FM frozen encoder + MLP
 
-- Type: optional frozen encoder with deterministic proxy fallback.
+- Type: real local pretrained frozen encoder plus LogisticRegression classifier.
 - Local weights: `models/hf/rnafm/`.
-- Main-pipeline behavior: if weights/dependencies are absent, k-mer/signal proxy embeddings are used.
-- Limitation: proxy fallback is not a real pretrained RNA-FM result.
+- Main-pipeline behavior: loads real local weights and fails if they are unavailable.
+- Limitation: evaluated only on the current small synthetic split.
 
 ## RNABERT frozen encoder + MLP
 
-- Type: optional frozen encoder with deterministic proxy fallback.
+- Type: real local pretrained frozen encoder plus LogisticRegression classifier.
 - Local weights: `models/hf/rnabert/`.
-- Main-pipeline behavior: if weights/dependencies are absent, token/position/signal proxy embeddings are used.
-- Limitation: proxy fallback is not a real pretrained RNABERT result.
+- Main-pipeline behavior: loads real local weights and fails if they are unavailable.
+- Limitation: evaluated only on the current small synthetic split.
 
-## SpliceAI optional real tool
+## External splice tools
 
-- Type: optional task-specific splice model wrapper.
-- Main-pipeline behavior: proxy fallback maps donor/acceptor signal features to three-class probabilities.
-- Limitation: fallback is a case-study compatible proxy, not full SpliceAI inference.
-
-## Pangolin optional tool
-
-- Type: optional long-context splice tool wrapper.
-- Main-pipeline behavior: small hard-negative/tissue case-study proxy.
-- Limitation: not a full Pangolin benchmark unless external dependency and inputs are explicitly supplied.
-
-## MMSplice / MaxEntScan
-
-- Type: optional splice variant tools or consensus-strength proxies.
-- Main-pipeline behavior: deterministic small-sample delta score fallback.
-- Limitation: no full ClinVar benchmark is claimed.
-
-## Borzoi / AlphaGenome
-
-- Type: optional long-range regulatory case studies.
-- Main-pipeline behavior: documented small example outputs.
-- Limitation: external API/weights are not required and no full benchmark is claimed.
+- SpliceAI: real package weights from `spliceai` are executed in the Python 3.10 splice-tools environment on padded synthetic WT/Mut sequences.
+- Pangolin: real package weights are executed through the installed Pangolin/PyTorch environment on padded synthetic WT/Mut sequences.
+- MMSplice: real `MMSplice().predict_on_seq` module scores are executed in the Python 3.10 splice-tools environment.
+- MaxEntScan: real `maxentpy` score5/score3 local splice-window scores are executed in the Python 3.10 splice-tools environment.
+- Boundary: these are real tool runs on synthetic sequence inputs, not full ClinVar/GTEx coordinate benchmarks.

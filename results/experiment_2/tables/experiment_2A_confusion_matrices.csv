@@ -1,145 +1,109 @@
 window_flank,model,split,true_label,true_label_name,pred_label,pred_label_name,count
-50,CNN motif baseline,test,0,donor,0,donor,95
-50,CNN motif baseline,test,0,donor,1,acceptor,0
-50,CNN motif baseline,test,0,donor,2,non_splice,0
-50,CNN motif baseline,test,1,acceptor,0,donor,0
-50,CNN motif baseline,test,1,acceptor,1,acceptor,82
-50,CNN motif baseline,test,1,acceptor,2,non_splice,8
-50,CNN motif baseline,test,2,non_splice,0,donor,0
-50,CNN motif baseline,test,2,non_splice,1,acceptor,28
-50,CNN motif baseline,test,2,non_splice,2,non_splice,72
-50,RNA-FM frozen k-mer + MLP,test,0,donor,0,donor,95
-50,RNA-FM frozen k-mer + MLP,test,0,donor,1,acceptor,0
-50,RNA-FM frozen k-mer + MLP,test,0,donor,2,non_splice,0
-50,RNA-FM frozen k-mer + MLP,test,1,acceptor,0,donor,0
-50,RNA-FM frozen k-mer + MLP,test,1,acceptor,1,acceptor,90
-50,RNA-FM frozen k-mer + MLP,test,1,acceptor,2,non_splice,0
-50,RNA-FM frozen k-mer + MLP,test,2,non_splice,0,donor,3
-50,RNA-FM frozen k-mer + MLP,test,2,non_splice,1,acceptor,0
-50,RNA-FM frozen k-mer + MLP,test,2,non_splice,2,non_splice,97
-50,RNABERT frozen token + MLP,test,0,donor,0,donor,95
-50,RNABERT frozen token + MLP,test,0,donor,1,acceptor,0
-50,RNABERT frozen token + MLP,test,0,donor,2,non_splice,0
-50,RNABERT frozen token + MLP,test,1,acceptor,0,donor,0
-50,RNABERT frozen token + MLP,test,1,acceptor,1,acceptor,90
-50,RNABERT frozen token + MLP,test,1,acceptor,2,non_splice,0
-50,RNABERT frozen token + MLP,test,2,non_splice,0,donor,0
-50,RNABERT frozen token + MLP,test,2,non_splice,1,acceptor,0
-50,RNABERT frozen token + MLP,test,2,non_splice,2,non_splice,100
-50,SpliceAI signal proxy,test,0,donor,0,donor,95
-50,SpliceAI signal proxy,test,0,donor,1,acceptor,0
-50,SpliceAI signal proxy,test,0,donor,2,non_splice,0
-50,SpliceAI signal proxy,test,1,acceptor,0,donor,0
-50,SpliceAI signal proxy,test,1,acceptor,1,acceptor,90
-50,SpliceAI signal proxy,test,1,acceptor,2,non_splice,0
-50,SpliceAI signal proxy,test,2,non_splice,0,donor,0
-50,SpliceAI signal proxy,test,2,non_splice,1,acceptor,1
-50,SpliceAI signal proxy,test,2,non_splice,2,non_splice,99
-100,CNN motif baseline,test,0,donor,0,donor,95
-100,CNN motif baseline,test,0,donor,1,acceptor,0
-100,CNN motif baseline,test,0,donor,2,non_splice,0
-100,CNN motif baseline,test,1,acceptor,0,donor,0
-100,CNN motif baseline,test,1,acceptor,1,acceptor,82
-100,CNN motif baseline,test,1,acceptor,2,non_splice,8
-100,CNN motif baseline,test,2,non_splice,0,donor,0
-100,CNN motif baseline,test,2,non_splice,1,acceptor,28
-100,CNN motif baseline,test,2,non_splice,2,non_splice,72
-100,RNA-FM frozen k-mer + MLP,test,0,donor,0,donor,94
-100,RNA-FM frozen k-mer + MLP,test,0,donor,1,acceptor,0
-100,RNA-FM frozen k-mer + MLP,test,0,donor,2,non_splice,1
-100,RNA-FM frozen k-mer + MLP,test,1,acceptor,0,donor,0
-100,RNA-FM frozen k-mer + MLP,test,1,acceptor,1,acceptor,90
-100,RNA-FM frozen k-mer + MLP,test,1,acceptor,2,non_splice,0
-100,RNA-FM frozen k-mer + MLP,test,2,non_splice,0,donor,6
-100,RNA-FM frozen k-mer + MLP,test,2,non_splice,1,acceptor,0
-100,RNA-FM frozen k-mer + MLP,test,2,non_splice,2,non_splice,94
-100,RNABERT frozen token + MLP,test,0,donor,0,donor,95
-100,RNABERT frozen token + MLP,test,0,donor,1,acceptor,0
-100,RNABERT frozen token + MLP,test,0,donor,2,non_splice,0
-100,RNABERT frozen token + MLP,test,1,acceptor,0,donor,0
-100,RNABERT frozen token + MLP,test,1,acceptor,1,acceptor,90
-100,RNABERT frozen token + MLP,test,1,acceptor,2,non_splice,0
-100,RNABERT frozen token + MLP,test,2,non_splice,0,donor,0
-100,RNABERT frozen token + MLP,test,2,non_splice,1,acceptor,0
-100,RNABERT frozen token + MLP,test,2,non_splice,2,non_splice,100
-100,SpliceAI signal proxy,test,0,donor,0,donor,95
-100,SpliceAI signal proxy,test,0,donor,1,acceptor,0
-100,SpliceAI signal proxy,test,0,donor,2,non_splice,0
-100,SpliceAI signal proxy,test,1,acceptor,0,donor,0
-100,SpliceAI signal proxy,test,1,acceptor,1,acceptor,90
-100,SpliceAI signal proxy,test,1,acceptor,2,non_splice,0
-100,SpliceAI signal proxy,test,2,non_splice,0,donor,0
-100,SpliceAI signal proxy,test,2,non_splice,1,acceptor,1
-100,SpliceAI signal proxy,test,2,non_splice,2,non_splice,99
-200,CNN motif baseline,test,0,donor,0,donor,95
-200,CNN motif baseline,test,0,donor,1,acceptor,0
-200,CNN motif baseline,test,0,donor,2,non_splice,0
-200,CNN motif baseline,test,1,acceptor,0,donor,0
-200,CNN motif baseline,test,1,acceptor,1,acceptor,82
-200,CNN motif baseline,test,1,acceptor,2,non_splice,8
-200,CNN motif baseline,test,2,non_splice,0,donor,0
-200,CNN motif baseline,test,2,non_splice,1,acceptor,28
-200,CNN motif baseline,test,2,non_splice,2,non_splice,72
-200,RNA-FM frozen k-mer + MLP,test,0,donor,0,donor,88
-200,RNA-FM frozen k-mer + MLP,test,0,donor,1,acceptor,0
-200,RNA-FM frozen k-mer + MLP,test,0,donor,2,non_splice,7
-200,RNA-FM frozen k-mer + MLP,test,1,acceptor,0,donor,0
-200,RNA-FM frozen k-mer + MLP,test,1,acceptor,1,acceptor,90
-200,RNA-FM frozen k-mer + MLP,test,1,acceptor,2,non_splice,0
-200,RNA-FM frozen k-mer + MLP,test,2,non_splice,0,donor,9
-200,RNA-FM frozen k-mer + MLP,test,2,non_splice,1,acceptor,0
-200,RNA-FM frozen k-mer + MLP,test,2,non_splice,2,non_splice,91
-200,RNABERT frozen token + MLP,test,0,donor,0,donor,95
-200,RNABERT frozen token + MLP,test,0,donor,1,acceptor,0
-200,RNABERT frozen token + MLP,test,0,donor,2,non_splice,0
-200,RNABERT frozen token + MLP,test,1,acceptor,0,donor,0
-200,RNABERT frozen token + MLP,test,1,acceptor,1,acceptor,90
-200,RNABERT frozen token + MLP,test,1,acceptor,2,non_splice,0
-200,RNABERT frozen token + MLP,test,2,non_splice,0,donor,1
-200,RNABERT frozen token + MLP,test,2,non_splice,1,acceptor,2
-200,RNABERT frozen token + MLP,test,2,non_splice,2,non_splice,97
-200,SpliceAI signal proxy,test,0,donor,0,donor,95
-200,SpliceAI signal proxy,test,0,donor,1,acceptor,0
-200,SpliceAI signal proxy,test,0,donor,2,non_splice,0
-200,SpliceAI signal proxy,test,1,acceptor,0,donor,0
-200,SpliceAI signal proxy,test,1,acceptor,1,acceptor,90
-200,SpliceAI signal proxy,test,1,acceptor,2,non_splice,0
-200,SpliceAI signal proxy,test,2,non_splice,0,donor,0
-200,SpliceAI signal proxy,test,2,non_splice,1,acceptor,1
-200,SpliceAI signal proxy,test,2,non_splice,2,non_splice,99
-400,CNN motif baseline,test,0,donor,0,donor,95
-400,CNN motif baseline,test,0,donor,1,acceptor,0
-400,CNN motif baseline,test,0,donor,2,non_splice,0
-400,CNN motif baseline,test,1,acceptor,0,donor,0
-400,CNN motif baseline,test,1,acceptor,1,acceptor,82
-400,CNN motif baseline,test,1,acceptor,2,non_splice,8
-400,CNN motif baseline,test,2,non_splice,0,donor,0
-400,CNN motif baseline,test,2,non_splice,1,acceptor,28
-400,CNN motif baseline,test,2,non_splice,2,non_splice,72
-400,RNA-FM frozen k-mer + MLP,test,0,donor,0,donor,89
-400,RNA-FM frozen k-mer + MLP,test,0,donor,1,acceptor,0
-400,RNA-FM frozen k-mer + MLP,test,0,donor,2,non_splice,6
-400,RNA-FM frozen k-mer + MLP,test,1,acceptor,0,donor,0
-400,RNA-FM frozen k-mer + MLP,test,1,acceptor,1,acceptor,90
-400,RNA-FM frozen k-mer + MLP,test,1,acceptor,2,non_splice,0
-400,RNA-FM frozen k-mer + MLP,test,2,non_splice,0,donor,5
-400,RNA-FM frozen k-mer + MLP,test,2,non_splice,1,acceptor,1
-400,RNA-FM frozen k-mer + MLP,test,2,non_splice,2,non_splice,94
-400,RNABERT frozen token + MLP,test,0,donor,0,donor,95
-400,RNABERT frozen token + MLP,test,0,donor,1,acceptor,0
-400,RNABERT frozen token + MLP,test,0,donor,2,non_splice,0
-400,RNABERT frozen token + MLP,test,1,acceptor,0,donor,0
-400,RNABERT frozen token + MLP,test,1,acceptor,1,acceptor,90
-400,RNABERT frozen token + MLP,test,1,acceptor,2,non_splice,0
-400,RNABERT frozen token + MLP,test,2,non_splice,0,donor,1
-400,RNABERT frozen token + MLP,test,2,non_splice,1,acceptor,4
-400,RNABERT frozen token + MLP,test,2,non_splice,2,non_splice,95
-400,SpliceAI signal proxy,test,0,donor,0,donor,95
-400,SpliceAI signal proxy,test,0,donor,1,acceptor,0
-400,SpliceAI signal proxy,test,0,donor,2,non_splice,0
-400,SpliceAI signal proxy,test,1,acceptor,0,donor,0
-400,SpliceAI signal proxy,test,1,acceptor,1,acceptor,90
-400,SpliceAI signal proxy,test,1,acceptor,2,non_splice,0
-400,SpliceAI signal proxy,test,2,non_splice,0,donor,0
-400,SpliceAI signal proxy,test,2,non_splice,1,acceptor,1
-400,SpliceAI signal proxy,test,2,non_splice,2,non_splice,99
+50,CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,95
+50,CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
+50,CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,0
+50,CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
+50,CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
+50,CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
+50,CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
+50,CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,7
+50,CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,92
+50,RNA-FM frozen encoder + MLP,test,0,donor,0,donor,93
+50,RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,0
+50,RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,2
+50,RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
+50,RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+50,RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+50,RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,2
+50,RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+50,RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,98
+50,RNABERT frozen encoder + MLP,test,0,donor,0,donor,95
+50,RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
+50,RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,0
+50,RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
+50,RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+50,RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+50,RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,1
+50,RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+50,RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,99
+100,CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,95
+100,CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
+100,CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,0
+100,CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
+100,CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
+100,CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
+100,CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
+100,CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,20
+100,CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,79
+100,RNA-FM frozen encoder + MLP,test,0,donor,0,donor,90
+100,RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,1
+100,RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,4
+100,RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
+100,RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+100,RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+100,RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,5
+100,RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+100,RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,95
+100,RNABERT frozen encoder + MLP,test,0,donor,0,donor,95
+100,RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
+100,RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,0
+100,RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
+100,RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+100,RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+100,RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,1
+100,RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+100,RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,99
+200,CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,95
+200,CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
+200,CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,0
+200,CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
+200,CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
+200,CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
+200,CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
+200,CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,32
+200,CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,67
+200,RNA-FM frozen encoder + MLP,test,0,donor,0,donor,92
+200,RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,0
+200,RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,3
+200,RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
+200,RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+200,RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+200,RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,5
+200,RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+200,RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,95
+200,RNABERT frozen encoder + MLP,test,0,donor,0,donor,95
+200,RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
+200,RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,0
+200,RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
+200,RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,89
+200,RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,1
+200,RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,2
+200,RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+200,RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,98
+400,CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,95
+400,CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
+400,CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,0
+400,CNN baseline (PyTorch Conv1D),test,1,acceptor,0,donor,0
+400,CNN baseline (PyTorch Conv1D),test,1,acceptor,1,acceptor,90
+400,CNN baseline (PyTorch Conv1D),test,1,acceptor,2,non_splice,0
+400,CNN baseline (PyTorch Conv1D),test,2,non_splice,0,donor,1
+400,CNN baseline (PyTorch Conv1D),test,2,non_splice,1,acceptor,32
+400,CNN baseline (PyTorch Conv1D),test,2,non_splice,2,non_splice,67
+400,RNA-FM frozen encoder + MLP,test,0,donor,0,donor,88
+400,RNA-FM frozen encoder + MLP,test,0,donor,1,acceptor,1
+400,RNA-FM frozen encoder + MLP,test,0,donor,2,non_splice,6
+400,RNA-FM frozen encoder + MLP,test,1,acceptor,0,donor,0
+400,RNA-FM frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+400,RNA-FM frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+400,RNA-FM frozen encoder + MLP,test,2,non_splice,0,donor,5
+400,RNA-FM frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+400,RNA-FM frozen encoder + MLP,test,2,non_splice,2,non_splice,95
+400,RNABERT frozen encoder + MLP,test,0,donor,0,donor,95
+400,RNABERT frozen encoder + MLP,test,0,donor,1,acceptor,0
+400,RNABERT frozen encoder + MLP,test,0,donor,2,non_splice,0
+400,RNABERT frozen encoder + MLP,test,1,acceptor,0,donor,0
+400,RNABERT frozen encoder + MLP,test,1,acceptor,1,acceptor,90
+400,RNABERT frozen encoder + MLP,test,1,acceptor,2,non_splice,0
+400,RNABERT frozen encoder + MLP,test,2,non_splice,0,donor,0
+400,RNABERT frozen encoder + MLP,test,2,non_splice,1,acceptor,0
+400,RNABERT frozen encoder + MLP,test,2,non_splice,2,non_splice,100

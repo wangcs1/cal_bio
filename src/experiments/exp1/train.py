@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-dir", type=Path, default=None)
     parser.add_argument("--checkpoint-dir", type=Path, default=PROJECT_ROOT / "results/checkpoints/experiment_1")
     parser.add_argument("--tables-dir", type=Path, default=EXP1_TABLES_DIR)
-    parser.add_argument("--models", default="cnn,rnafm,rnabert,spliceai")
+    parser.add_argument("--models", default="cnn,rnafm,rnabert")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-train-rows", type=int, default=855)
     parser.add_argument("--max-valid-rows", type=int, default=120)

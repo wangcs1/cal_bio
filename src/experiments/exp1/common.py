@@ -14,14 +14,12 @@ MODEL_FACTORIES = {
     "cnn": "src.models.cnn:CNNBaselineClassifier",
     "rnafm": "src.models.rnafm_mlp:RNAFMMLPClassifier",
     "rnabert": "src.models.rnabert_mlp:RNABERTMLPClassifier",
-    "spliceai": "src.models.spliceai_wrapper:SpliceAIThreeClassWrapper",
 }
 
 MODEL_METADATA = {
     "cnn": {"model_type": "baseline", "backend": "pytorch_conv1d"},
-    "rnafm": {"model_type": "frozen encoder", "backend": "local_pretrained_or_proxy_fallback"},
-    "rnabert": {"model_type": "frozen encoder", "backend": "local_pretrained_or_proxy_fallback"},
-    "spliceai": {"model_type": "proxy", "backend": "spliceai_signal_proxy"},
+    "rnafm": {"model_type": "frozen encoder", "backend": "local_pretrained_required"},
+    "rnabert": {"model_type": "frozen encoder", "backend": "local_pretrained_required"},
 }
 
 

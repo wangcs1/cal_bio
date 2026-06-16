@@ -162,7 +162,7 @@ def build_rare_motif_dataset(source: pd.DataFrame, max_rows_per_type: int = 40) 
             {
                 "sample_id": stable_id(row["sample_id"], "rare_at_ac", idx, prefix="rare"),
                 "sequence": rare,
-                "motif_type": "rare_AT-AC_acceptor_proxy",
+                "motif_type": "rare_AT-AC_acceptor",
                 "data_source": "synthetic_rare_motif_case_study_v1",
             }
         )

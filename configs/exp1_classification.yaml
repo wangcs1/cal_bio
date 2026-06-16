@@ -7,7 +7,6 @@ models:
   - cnn
   - rnafm
   - rnabert
-  - spliceai
 seed: 42
 max_train_rows: 855
 max_valid_rows: 120

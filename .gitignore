@@ -9,6 +9,8 @@ models/hf/
 results/embeddings/
 results/checkpoints/
 auth.json
+.env
+.env.local
 c669f101a9336b7831108dcb442c0c18.jpg
 
 __pycache__/

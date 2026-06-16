@@ -14,8 +14,8 @@ def write_resource_report(raw_dir: Path = PROJECT_ROOT / "data/raw", output: Pat
     lines = [
         "# Optional Resource Setup",
         "",
-        "The main C Part experiments use the small synthetic/proxy split and do not require raw genome files.",
-        "`data/raw/` is reserved for optional real-data smoke tests and case studies.",
+        "The main C Part experiments use the small synthetic split and do not require raw genome files.",
+        "`data/raw/` is reserved for optional real-data smoke tests and future case studies.",
         "",
         "| Resource | Status | Purpose |",
         "| --- | --- | --- |",

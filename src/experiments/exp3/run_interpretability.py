@@ -18,7 +18,6 @@ from src.data.build_clinvar_variant_dataset import build_clinvar_smoke
 from src.data.build_synthetic_splice_dataset import build_and_write
 from src.data.build_variant_dataset import build_and_write_variants
 from src.experiments.exp3.run_variant_effect import saturation_matrix, train_models
-from src.models.foundation_backbones import FrozenRnaFoundationClassifier
 from src.utils import (
     BASES,
     EXP2_FIGURES_DIR,
@@ -88,7 +87,7 @@ def run_ism(out_tables: Path, out_figures: Path, random_state: int) -> None:
             matrix.insert(1, "case", case_name)
             matrix.insert(2, "sample_id", row["sample_id"])
             write_dataframe(out_tables / f"{model_slug}_{case_name}_ism_matrix.csv", matrix)
-            if model.name == "SpliceAI signal proxy":
+            if model is models[0]:
                 write_dataframe(out_tables / f"{case_name}_ism_matrix.csv", matrix)
                 plot_matrix(matrix, out_figures / filename, f"In silico mutagenesis: {case_name}")
 
@@ -146,30 +145,6 @@ def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
         write_dataframe(out_tables / "variant_delta_profile_acceptor_gain.csv", acceptor_gain_profile)
 
 
-def run_attention_heatmaps(out_figures: Path) -> None:
-    test = read_csv(shared_split_file("test_pm200.csv"))
-    cases = [
-        ("donor", test[test["label"].astype(int) == 0].iloc[0]),
-        ("acceptor", test[test["label"].astype(int) == 1].iloc[0]),
-        ("hard_negative", test[(test["label"].astype(int) == 2) & test["negative_type"].astype(str).str.contains("hard")].iloc[0]),
-    ]
-    encoder = FrozenRnaFoundationClassifier("rnafm")
-    for case_name, row in cases:
-        matrix = encoder.attention_matrix(str(row["sequence"]), flank=40)
-        fig, ax = plt.subplots(figsize=(5.2, 4.6))
-        image = ax.imshow(matrix, cmap="magma", aspect="auto")
-        center = matrix.shape[0] // 2
-        ax.axhline(center, color="cyan", linewidth=0.8)
-        ax.axvline(center, color="cyan", linewidth=0.8)
-        ax.set_title(f"RNA-FM/RNABERT attention proxy: {case_name}")
-        ax.set_xlabel("Sequence position")
-        ax.set_ylabel("Sequence position")
-        fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
-        fig.tight_layout()
-        fig.savefig(out_figures / f"attention_{case_name}_heatmap.png", dpi=180)
-        plt.close(fig)
-
-
 def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:
     clinvar = build_clinvar_smoke()
     case = clinvar[clinvar["label"].astype(int) == 1].iloc[0]
@@ -192,47 +167,12 @@ def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:
     write_dataframe(out_tables / "variant_delta_profile_clinvar_smoke_case.csv", profile)
 
 
-def run_junction_case_study(out_tables: Path, out_figures: Path) -> None:
-    path = out_tables / "experiment_2C_tissue_splice_usage_case_study.csv"
-    if path.exists():
-        usage = read_csv(path)
-    else:
-        tissues = ["brain", "heart", "liver", "muscle", "blood"]
-        usage = pd.DataFrame(
-            [
-                {
-                    "event_id": "SYN_EVENT_ALT_EXON",
-                    "tissue": tissue,
-                    "pangolin_proxy_splice_usage": value,
-                    "data_source": "synthetic_tissue_case_study_v1",
-                }
-                for tissue, value in zip(tissues, [0.76, 0.36, 0.41, 0.81, 0.62])
-            ]
-        )
-        write_dataframe(path, usage)
-    fig, ax = plt.subplots(figsize=(7.4, 4.5))
-    for event, group in usage.groupby("event_id"):
-        group = group.sort_values("tissue")
-        ax.plot(group["tissue"], group["pangolin_proxy_splice_usage"], marker="o", linewidth=2, label=event)
-    ax.set_ylabel("Predicted junction usage")
-    ax.set_xlabel("Tissue")
-    ax.set_ylim(0.0, 1.0)
-    ax.set_title("Experiment 2C junction usage case study")
-    ax.grid(alpha=0.25)
-    ax.legend(fontsize=7)
-    fig.tight_layout()
-    fig.savefig(out_figures / "exp2C_junction_usage_case_study.png", dpi=180)
-    plt.close(fig)
-
-
 def run(out_tables: Path, out_figures: Path, random_state: int = 42) -> None:
     ensure_dirs(out_tables, out_figures)
     ensure_inputs()
     run_ism(out_tables, out_figures, random_state)
     run_variant_profiles(out_tables, out_figures)
-    run_attention_heatmaps(out_figures)
     run_clinvar_delta_profile(out_tables, out_figures)
-    run_junction_case_study(EXP2_TABLES_DIR, EXP2_FIGURES_DIR)
 
 
 def parse_args() -> argparse.Namespace:

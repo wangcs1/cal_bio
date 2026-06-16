@@ -1,13 +1,14 @@
 # C Part Combined Report
 
-Generated: 2026-06-11 01:52:03
+Generated: 2026-06-17 00:59:03
 
 ## Scope
 
 The main C Part pipeline uses the current small split, not a million-scale full dataset.
 Default split size is train/valid/test = 855/120/285 when the synthetic builder is run with
-the repository defaults. Large files under `data/raw/` and pretrained weights under
-`models/hf/` are optional resources for smoke tests or case studies.
+the repository defaults. This run reports real-model rows only. Experiments 1 and 2 use
+CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
+includes real external splice tools: SpliceAI, Pangolin, MMSplice, and MaxEntScan.
 
 ## Data
 
@@ -29,47 +30,40 @@ Artificial variant summary:
 
 ## Experiment 1
 
-Splice-site donor/acceptor/non-splice classification. The table includes proxy/fallback rows
-and optional-real-tool rows where available.
+Splice-site donor/acceptor/non-splice classification with the real-model rows only.
 
-| model_key   | model                                        | model_type     | backend                            | split   |   rows |   accuracy |   macro_precision |   macro_recall |   macro_f1 |   auroc |   auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |
-|:------------|:---------------------------------------------|:---------------|:-----------------------------------|:--------|-------:|-----------:|------------------:|---------------:|-----------:|--------:|--------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|
-| cnn         | CNN baseline (PyTorch Conv1D)                | baseline       | pytorch_conv1d                     | test    |    285 |     0.9018 |            0.9196 |         0.9067 |     0.9005 |  0.9899 |  0.9802 |     0.9948 |        0.8696 |          0.8372 |              0.4179 |                   67 |                    67 |                              28 | label == 2 and negative_type contains 'hard' |
-| rnafm       | RNA-FM frozen encoder + MLP                  | frozen encoder | local_pretrained_or_proxy_fallback | test    |    285 |     0.9509 |            0.9522 |         0.9526 |     0.9519 |  0.9938 |  0.9888 |     0.9333 |        0.9945 |          0.9278 |              0.1493 |                   67 |                    67 |                              10 | label == 2 and negative_type contains 'hard' |
-| rnabert     | RNABERT frozen encoder + MLP                 | frozen encoder | local_pretrained_or_proxy_fallback | test    |    285 |     0.993  |            0.9932 |         0.993  |     0.9931 |  0.9999 |  0.9998 |     0.9948 |        0.9944 |          0.99   |              0.0149 |                   67 |                    67 |                               1 | label == 2 and negative_type contains 'hard' |
-| spliceai    | SpliceAI optional real tool (proxy fallback) | proxy          | spliceai_signal_proxy              | test    |    285 |     0.8737 |            0.892  |         0.88   |     0.868  |  0.9981 |  0.9962 |     0.9005 |        0.9231 |          0.7805 |              0.5224 |                   67 |                    67 |                              35 | label == 2 and negative_type contains 'hard' |
+| model_key   | model                         | model_type     | backend                   | split   |   rows |   accuracy |   macro_precision |   macro_recall |   macro_f1 |   auroc |   auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |
+|:------------|:------------------------------|:---------------|:--------------------------|:--------|-------:|-----------:|------------------:|---------------:|-----------:|--------:|--------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|
+| cnn         | CNN baseline (PyTorch Conv1D) | baseline       | pytorch_conv1d            | test    |    285 |     0.8877 |            0.9111 |         0.8933 |     0.8858 |  0.9914 |  0.9825 |     0.9948 |        0.8531 |          0.8095 |              0.4776 |                   67 |                    67 |                              32 | label == 2 and negative_type contains 'hard' |
+| rnafm       | RNA-FM frozen encoder + MLP   | frozen encoder | local_pretrained_required | test    |    285 |     0.9509 |            0.9516 |         0.9526 |     0.9517 |  0.9936 |  0.9883 |     0.9381 |        0.989  |          0.9278 |              0.1493 |                   67 |                    67 |                              10 | label == 2 and negative_type contains 'hard' |
+| rnabert     | RNABERT frozen encoder + MLP  | frozen encoder | local_pretrained_required | test    |    285 |     0.993  |            0.9932 |         0.993  |     0.9931 |  0.9999 |  0.9998 |     0.9948 |        0.9944 |          0.99   |              0.0149 |                   67 |                    67 |                               1 | label == 2 and negative_type contains 'hard' |
 
 ## Experiment 2
 
-Multi-scale context, hard-negative, rare motif, tissue usage, regulatory motif, and topology
-analyses. Pangolin/GTEx/Borzoi/AlphaGenome outputs are small case studies, not full benchmarks.
+Multi-scale context, hard-negative, and rare-motif stress tests using the same real-model
+set.
 
-| model                                           |   test_easy_macro_f1 |   test_easy_auprc |   test_hard_macro_f1 |   test_hard_auprc |   cross_gene_macro_f1 |   cross_gene_auprc |   hard_negative_fpr |   hard_negative_rows |   hard_negative_false_positives | hard_negative_filter                         |   test_easy_rows |   test_hard_rows |   cross_gene_rows | case_study_note                                             |
-|:------------------------------------------------|---------------------:|------------------:|---------------------:|------------------:|----------------------:|-------------------:|--------------------:|---------------------:|--------------------------------:|:---------------------------------------------|-----------------:|-----------------:|------------------:|:------------------------------------------------------------|
-| CNN motif baseline                              |               0.9485 |            1      |               0.8347 |            0.8616 |                0.8733 |             0.894  |              0.4179 |                   67 |                              28 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 | nan                                                         |
-| RNA-FM frozen k-mer + MLP                       |               0.9485 |            0.9911 |               0.9362 |            0.9847 |                0.9453 |             0.9876 |              0.1194 |                   67 |                               8 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 | nan                                                         |
-| RNABERT frozen token + MLP                      |               1      |            1      |               0.987  |            1      |                0.9895 |             1      |              0.0448 |                   67 |                               3 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 | nan                                                         |
-| SpliceAI signal proxy                           |               1      |            1      |               0.9957 |            1      |                0.9965 |             1      |              0.0149 |                   67 |                               1 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 | nan                                                         |
-| Pangolin optional tool (small case-study proxy) |                      |                   |               0.8874 |            0.9969 |                0.8874 |             0.9969 |              0.4478 |                   67 |                              30 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 | Pangolin proxy fallback; optional real tool case study only |
+| model                         |   test_easy_macro_f1 |   test_easy_auprc |   test_hard_macro_f1 |   test_hard_auprc |   cross_gene_macro_f1 |   cross_gene_auprc |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |   test_easy_rows |   test_hard_rows |   cross_gene_rows |
+|:------------------------------|---------------------:|------------------:|---------------------:|------------------:|----------------------:|-------------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|-----------------:|-----------------:|------------------:|
+| CNN baseline (PyTorch Conv1D) |               1      |            1      |               0.839  |            0.9983 |                0.8821 |             0.9987 |              0.4925 |                   67 |                    67 |                              33 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
+| RNA-FM frozen encoder + MLP   |               0.9802 |            0.9987 |               0.9659 |            0.9911 |                0.9726 |             0.994  |              0.0746 |                   67 |                    67 |                               5 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
+| RNABERT frozen encoder + MLP  |               0.9932 |            0.9997 |               0.9871 |            0.9997 |                0.9896 |             0.9998 |              0.0299 |                   67 |                    67 |                               2 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
 
 ## Experiment 3
 
-Artificial variant effect prediction plus ClinVar/sQTL smoke case studies.
+Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
+main artificial-variant table includes both trained project models and real external
+splice tools; no proxy/fallback rows are reported.
 
-| model                                           |   auroc |   auprc |   top_k |   top_k_recall |   enrichment_at_k |   variants |
-|:------------------------------------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
-| RNABERT zero-shot token distance                |  0.999  |  0.9993 |      46 |         0.1643 |            1.6429 |        460 |
-| RNA-FM zero-shot embedding distance             |  0.9986 |  0.9991 |      46 |         0.1643 |            1.6429 |        460 |
-| RNABERT zero-shot pseudo-likelihood             |  0.8875 |  0.9441 |      46 |         0.1643 |            1.6429 |        460 |
-| RNA-FM zero-shot pseudo-likelihood              |  0.8791 |  0.9394 |      46 |         0.1643 |            1.6429 |        460 |
-| SpliceAI signal proxy                           |  0.8178 |  0.9048 |      46 |         0.1643 |            1.6429 |        460 |
-| Pangolin optional tool (small case-study proxy) |  0.8339 |  0.8865 |      46 |         0.1643 |            1.6429 |        460 |
-| SpliceAI optional real tool (proxy fallback)    |  0.8321 |  0.8814 |      46 |         0.1643 |            1.6429 |        460 |
-| MMSplice optional tool (proxy fallback)         |  0.8286 |  0.8773 |      46 |         0.1643 |            1.6429 |        460 |
-| MaxEntScan optional tool (proxy fallback)       |  0.8286 |  0.8773 |      46 |         0.1643 |            1.6429 |        460 |
-| CNN motif baseline                              |  0.8196 |  0.8678 |      46 |         0.1643 |            1.6429 |        460 |
-| RNABERT frozen token + MLP                      |  0.6829 |  0.8183 |      46 |         0.1607 |            1.6071 |        460 |
-| RNA-FM frozen k-mer + MLP                       |  0.5958 |  0.7584 |      46 |         0.1643 |            1.6429 |        460 |
+| model                         | source             |   auroc |   auprc |   top_k |   top_k_recall |   enrichment_at_k |   variants |
+|:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7137 |  0.8693 |      46 |         0.1643 |            1.6429 |        460 |
+| RNABERT frozen encoder + MLP  | trained_classifier |  0.6828 |  0.8503 |      46 |         0.1643 |            1.6429 |        460 |
+| SpliceAI real sequence model  | real_external_tool |  0.6392 |  0.8271 |      46 |         0.1643 |            1.6429 |        460 |
+| MaxEntScan real local score   | real_external_tool |  0.7268 |  0.789  |      46 |         0.1643 |            1.6429 |        460 |
+| RNA-FM frozen encoder + MLP   | trained_classifier |  0.5962 |  0.7695 |      46 |         0.1643 |            1.6429 |        460 |
+| MMSplice real sequence model  | real_external_tool |  0.3333 |  0.6087 |      46 |         0      |            0      |        460 |
+| Pangolin real sequence model  | real_external_tool |  0.5    |  0.6087 |      46 |         0.0857 |            0.8571 |        460 |
 
 ## Reports
 
@@ -78,5 +72,3 @@ Artificial variant effect prediction plus ClinVar/sQTL smoke case studies.
 - `reports/experiment_3.md`
 - `reports/data_qc.md`
 - `reports/resource_setup.md`
-- `reports/model_cards.md`
-- `reports/experiment_log.md`

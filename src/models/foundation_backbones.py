@@ -11,7 +11,7 @@ from scipy import sparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
-try:  # Real frozen encoders are optional; the main small-sample pipeline has a proxy fallback.
+try:  # Real frozen encoders are required by the main real-model pipeline.
     import torch
     from safetensors.torch import load_file
     from multimolecule import (
@@ -34,6 +34,7 @@ MODEL_SPECS = {
     "rnafm": {
         "name": "RNA-FM frozen encoder + MLP",
         "path": PROJECT_ROOT / "models/hf/rnafm",
+        "repo": "multimolecule/rnafm",
         "config_cls": RnaFmConfig,
         "model_cls": RnaFmModel,
         "batch_size": 8,
@@ -42,6 +43,7 @@ MODEL_SPECS = {
     "rnabert": {
         "name": "RNABERT frozen encoder + MLP",
         "path": PROJECT_ROOT / "models/hf/rnabert",
+        "repo": "multimolecule/rnabert",
         "config_cls": RnaBertConfig,
         "model_cls": RnaBertModel,
         "batch_size": 64,
@@ -77,7 +79,6 @@ class FrozenRnaFoundationClassifier:
         self.device = torch.device("cuda" if torch is not None and torch.cuda.is_available() else "cpu") if torch else "cpu"
         self._tokenizer = None
         self._backbone = None
-        self.fallback_reason_: str | None = None
 
     def fit(self, sequences: list[str], labels: np.ndarray) -> "FrozenRnaFoundationClassifier":
         x = self._features(sequences)
@@ -103,17 +104,16 @@ class FrozenRnaFoundationClassifier:
     def _embeddings(self, sequences: list[str]) -> np.ndarray:
         ensure_dirs(self.cache_dir)
         normalized = normalize_sequences(sequences)
-        cache_path = self.cache_dir / f"{self.model_key}_{self._fingerprint(normalized)}.npy"
-        if cache_path.exists():
-            return np.load(cache_path)
-
         try:
             tokenizer, backbone = self._load_backbone()
         except Exception as exc:
-            self.fallback_reason_ = str(exc)
-            embeddings = self._fallback_embeddings(normalized)
-            np.save(cache_path, embeddings)
-            return embeddings
+            raise RuntimeError(
+                f"{self.name} requires real local pretrained weights and dependencies. "
+                f"Expected weights under {self.spec['path']}."
+            ) from exc
+        cache_path = self.cache_dir / f"{self.model_key}_real_{self._fingerprint(normalized)}.npy"
+        if cache_path.exists():
+            return np.load(cache_path)
         rna_sequences = [sequence.replace("T", "U") for sequence in normalized]
         chunks: list[np.ndarray] = []
         backbone.eval()
@@ -143,22 +143,25 @@ class FrozenRnaFoundationClassifier:
 
         if torch is None or load_file is None or RnaTokenizer is None:
             raise RuntimeError("optional multimolecule/safetensors/torch dependencies are unavailable")
-        model_path = Path(self.spec["path"])
-        if not model_path.exists():
-            raise RuntimeError(f"local pretrained weights are missing: {model_path}")
-        tokenizer = RnaTokenizer.from_pretrained(model_path)
-        config = self.spec["config_cls"].from_pretrained(model_path)
-        backbone = self.spec["model_cls"](config)
-        state = load_file(model_path / "model.safetensors")
-        backbone_state = {key[len("model.") :]: value for key, value in state.items() if key.startswith("model.")}
-        missing, unexpected = backbone.load_state_dict(backbone_state, strict=False)
-        unexpected = list(unexpected)
-        critical_missing = [key for key in missing if not key.startswith("pooler.")]
-        if critical_missing or unexpected:
-            raise RuntimeError(
-                f"Could not load {self.model_key} backbone cleanly. "
-                f"critical_missing={critical_missing[:8]}, unexpected={unexpected[:8]}"
-            )
+        source = Path(self.spec["path"])
+        if source.exists():
+            tokenizer = RnaTokenizer.from_pretrained(source)
+            config = self.spec["config_cls"].from_pretrained(source)
+            backbone = self.spec["model_cls"](config)
+            state = load_file(source / "model.safetensors")
+            backbone_state = {key[len("model.") :]: value for key, value in state.items() if key.startswith("model.")}
+            missing, unexpected = backbone.load_state_dict(backbone_state, strict=False)
+            unexpected = list(unexpected)
+            critical_missing = [key for key in missing if not key.startswith("pooler.")]
+            if critical_missing or unexpected:
+                raise RuntimeError(
+                    f"Could not load {self.model_key} backbone cleanly. "
+                    f"critical_missing={critical_missing[:8]}, unexpected={unexpected[:8]}"
+                )
+        else:
+            source = str(self.spec["repo"])
+            tokenizer = RnaTokenizer.from_pretrained(source)
+            backbone = self.spec["model_cls"].from_pretrained(source)
         for param in backbone.parameters():
             param.requires_grad_(False)
         backbone.to(self.device)
@@ -166,16 +169,8 @@ class FrozenRnaFoundationClassifier:
         self._backbone = backbone
         return tokenizer, backbone
 
-    def _fallback_embeddings(self, sequences: list[str]) -> np.ndarray:
-        k_values = [3, 4] if self.model_key == "rnafm" else [3, 5]
-        vocab = kmer_vocabulary(k_values)
-        rows = []
-        for sequence in sequences:
-            rows.append(np.concatenate([kmer_counts(sequence, vocab), engineered_signal_features(sequence)]))
-        return np.vstack(rows).astype(np.float32)
-
     def pseudo_likelihood_score(self, sequence: str) -> float:
-        """Deterministic small-sample proxy for masked pseudo-likelihood scoring."""
+        """Legacy deterministic score kept for non-main experiments."""
         seq = sequence.upper().replace("U", "T")
         signal = engineered_signal_features(seq)
         center_bonus = 0.0
