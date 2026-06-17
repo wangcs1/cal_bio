@@ -19,7 +19,7 @@ External tools are executed through a Python 3.10 splice-tool environment and me
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.7532 |  0.7839 |      50 |          0.196 |              1.96 |        500 |
 | Pangolin real sequence model  | real_external_tool |  0.7023 |  0.7781 |      50 |          0.196 |              1.96 |        500 |
-| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7018 |  0.7399 |      50 |          0.196 |              1.96 |        500 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.6959 |  0.7374 |      50 |          0.196 |              1.96 |        500 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.6673 |  0.7326 |      50 |          0.196 |              1.96 |        500 |
 | SpliceAI real sequence model  | real_external_tool |  0.6425 |  0.7289 |      50 |          0.2   |              2    |        500 |
 | MaxEntScan real local score   | real_external_tool |  0.6165 |  0.6716 |      50 |          0.196 |              1.96 |        500 |
@@ -34,7 +34,7 @@ This diagnostic evaluates the same scores on an exact-distance-matched ClinVar s
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.6684 |  0.6559 |      33 |         0.135  |            1.3333 |        326 |
 | Pangolin real sequence model  | real_external_tool |  0.5902 |  0.6416 |      33 |         0.1595 |            1.5758 |        326 |
 | SpliceAI real sequence model  | real_external_tool |  0.5135 |  0.5693 |      33 |         0.135  |            1.3333 |        326 |
-| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.5625 |  0.5666 |      33 |         0.1104 |            1.0909 |        326 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.558  |  0.565  |      33 |         0.1104 |            1.0909 |        326 |
 | MaxEntScan real local score   | real_external_tool |  0.4668 |  0.5496 |      33 |         0.1288 |            1.2727 |        326 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.5155 |  0.5442 |      33 |         0.1104 |            1.0909 |        326 |
 | MMSplice real sequence model  | real_external_tool |  0.5    |  0.5    |      33 |         0.092  |            0.9091 |        326 |
@@ -43,9 +43,9 @@ This diagnostic evaluates the same scores on an exact-distance-matched ClinVar s
 
 | model                         | source             | variant_type            |   mean_score |   median_score |   rows |   positive_rate |
 |:------------------------------|:-------------------|:------------------------|-------------:|---------------:|-------:|----------------:|
-| CNN baseline (PyTorch Conv1D) | trained_classifier | acceptor_clinvar_splice |       0.1356 |         0.0021 |    141 |               1 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier | acceptor_clinvar_splice |       0.1354 |         0.0021 |    141 |               1 |
 | CNN baseline (PyTorch Conv1D) | trained_classifier | clinvar_benign_snv      |       0.0106 |         0.0004 |    250 |               0 |
-| CNN baseline (PyTorch Conv1D) | trained_classifier | donor_clinvar_splice    |       0.0776 |         0.0022 |    109 |               1 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier | donor_clinvar_splice    |       0.0778 |         0.0021 |    109 |               1 |
 | MMSplice real sequence model  | real_external_tool | acceptor_clinvar_splice |       0      |         0      |    141 |               1 |
 | MMSplice real sequence model  | real_external_tool | clinvar_benign_snv      |       0      |         0      |    250 |               0 |
 | MMSplice real sequence model  | real_external_tool | donor_clinvar_splice    |       0      |         0      |    109 |               1 |
@@ -75,7 +75,7 @@ ClinVar subset metrics:
 |:------------------------------|--------:|--------:|-----------:|
 | RNA-FM frozen encoder + MLP   |  0.7222 |  0.7583 |         12 |
 | RNABERT frozen encoder + MLP  |  0.4167 |  0.6366 |         12 |
-| CNN baseline (PyTorch Conv1D) |  0.4722 |  0.5807 |         12 |
+| CNN baseline (PyTorch Conv1D) |  0.4444 |  0.5742 |         12 |
 
 sQTL-style rows: 10
 
@@ -84,7 +84,7 @@ Outputs:
 - `results/experiment_3/tables/experiment_3A_variant_scores.csv`
 - `results/experiment_3/tables/experiment_3A_variant_metrics.csv`
 - `results/experiment_3/tables/variant_effect_stratified_by_type.csv`
-- `results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`
+- `results/experiment_3/tables/experiment_3B_format_control_metrics.csv`
 - `results/experiment_3/tables/experiment_3C_sqtl_case_study.csv`
 - `results/experiment_3/figures/exp3_variant_auroc.png`
 - `results/experiment_3/figures/exp3_variant_auprc.png`

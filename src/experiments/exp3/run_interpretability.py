@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.data.build_clinvar_variant_dataset import build_clinvar_smoke, build_clinvar_variants
+from src.data.build_clinvar_variant_dataset import build_clinvar_smoke as build_clinvar_format_control, build_clinvar_variants
 from src.data.build_splice_site_dataset import build_and_write_real
 from src.experiments.exp3.run_variant_effect import saturation_matrix, train_models
 from src.utils import (
@@ -132,12 +132,12 @@ def run_variant_profiles(out_tables: Path, out_figures: Path) -> None:
 
 
 def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:
-    clinvar = build_clinvar_smoke()
+    clinvar = build_clinvar_format_control()
     case = clinvar[clinvar["label"].astype(int) == 1].iloc[0]
     profile = plot_delta_profile(
         case,
-        out_figures / "variant_delta_profile_clinvar_smoke_case.png",
-        "WT vs Mut delta profile: ClinVar smoke case",
+        out_figures / "variant_delta_profile_clinvar_format_control_case.png",
+        "WT vs Mut delta profile: ClinVar format-control case",
     )
     profile["chrom"] = case["chrom"]
     profile["pos"] = case["pos"]
@@ -150,7 +150,7 @@ def run_clinvar_delta_profile(out_tables: Path, out_figures: Path) -> None:
     delta = (mut[["donor_score", "acceptor_score"]] - wt[["donor_score", "acceptor_score"]]).abs().max(axis=1)
     max_pos = int(delta.idxmax()) if not delta.empty else 0
     profile["max_abs_delta_position"] = max_pos
-    write_dataframe(out_tables / "variant_delta_profile_clinvar_smoke_case.csv", profile)
+    write_dataframe(out_tables / "variant_delta_profile_clinvar_format_control_case.csv", profile)
 
 
 def run(out_tables: Path, out_figures: Path, random_state: int = 42) -> None:

@@ -159,9 +159,11 @@ class FrozenRnaFoundationClassifier:
                     f"critical_missing={critical_missing[:8]}, unexpected={unexpected[:8]}"
                 )
         else:
-            source = str(self.spec["repo"])
-            tokenizer = RnaTokenizer.from_pretrained(source)
-            backbone = self.spec["model_cls"].from_pretrained(source)
+            raise FileNotFoundError(
+                f"{self.name} requires local pretrained weights under {source}. "
+                "Run scripts/download_real_foundation_models.py before the main benchmark; "
+                "the benchmark does not fall back to remote downloads or engineered features."
+            )
         for param in backbone.parameters():
             param.requires_grad_(False)
         backbone.to(self.device)

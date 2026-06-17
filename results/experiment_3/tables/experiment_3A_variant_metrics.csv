@@ -1,7 +1,7 @@
 model,source,auroc,auprc,top_k,top_k_recall,enrichment_at_k,variants
 RNA-FM frozen encoder + MLP,trained_classifier,0.7532,0.783894708587813,50.0,0.196,1.96,500
 Pangolin real sequence model,real_external_tool,0.70232,0.7781013662235725,50.0,0.196,1.96,500
-CNN baseline (PyTorch Conv1D),trained_classifier,0.701808,0.7399373837633152,50.0,0.196,1.96,500
+CNN baseline (PyTorch Conv1D),trained_classifier,0.695872,0.7373861278839329,50.0,0.196,1.96,500
 RNABERT frozen encoder + MLP,trained_classifier,0.66728,0.7326115968315969,50.0,0.196,1.96,500
 SpliceAI real sequence model,real_external_tool,0.642496,0.7289252713829019,50.0,0.2,2.0,500
 MaxEntScan real local score,real_external_tool,0.616528,0.6715653297000241,50.0,0.196,1.96,500

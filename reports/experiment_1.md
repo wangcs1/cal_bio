@@ -10,7 +10,7 @@ Only real-model rows are reported in this run.
 
 | model                         |   train_rows |   valid_rows |   macro_f1 |   accuracy |    auroc |    auprc |
 |:------------------------------|-------------:|-------------:|-----------:|-----------:|---------:|---------:|
-| CNN baseline (PyTorch Conv1D) |         2339 |          230 |   0.848824 |   0.852174 | 0.965703 | 0.934086 |
+| CNN baseline (PyTorch Conv1D) |         2339 |          230 |   0.852672 |   0.856522 | 0.965615 | 0.934434 |
 | RNA-FM frozen encoder + MLP   |         2339 |          230 |   0.809933 |   0.808696 | 0.93486  | 0.878588 |
 | RNABERT frozen encoder + MLP  |         2339 |          230 |   0.819815 |   0.821739 | 0.955022 | 0.916894 |
 
@@ -18,7 +18,7 @@ Only real-model rows are reported in this run.
 
 | model                         | model_type     | backend                   |   rows |   accuracy |   macro_f1 |    auroc |    auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |
 |:------------------------------|:---------------|:--------------------------|-------:|-----------:|-----------:|---------:|---------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|
-| CNN baseline (PyTorch Conv1D) | baseline       | pytorch_conv1d            |    431 |   0.819026 |   0.820584 | 0.948833 | 0.907208 |   0.898876 |      0.831169 |        0.731707 |            0.322581 |                  155 |
+| CNN baseline (PyTorch Conv1D) | baseline       | pytorch_conv1d            |    431 |   0.823666 |   0.824809 | 0.948925 | 0.907004 |   0.898876 |      0.83871  |        0.736842 |            0.322581 |                  155 |
 | RNA-FM frozen encoder + MLP   | frozen encoder | local_pretrained_required |    431 |   0.763341 |   0.766977 | 0.915666 | 0.840231 |   0.816794 |      0.810997 |        0.673139 |            0.329032 |                  155 |
 | RNABERT frozen encoder + MLP  | frozen encoder | local_pretrained_required |    431 |   0.819026 |   0.819869 | 0.929839 | 0.871822 |   0.888889 |      0.833876 |        0.736842 |            0.322581 |                  155 |
 

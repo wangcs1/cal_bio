@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 from pathlib import Path
 
@@ -77,6 +78,28 @@ def _gc_fraction(sequence: str) -> float:
     return (seq.count("G") + seq.count("C")) / len(seq) if seq else float("nan")
 
 
+def _sequence_digest(sequence: str) -> str:
+    return hashlib.sha1(_dna(sequence).encode("ascii", errors="ignore")).hexdigest()
+
+
+def _center_window(sequence: str, flank: int = 80) -> str:
+    seq = _dna(sequence)
+    center = len(seq) // 2
+    return seq[max(0, center - flank) : min(len(seq), center + flank + 1)]
+
+
+def _kmer_set(sequence: str, k: int = 9) -> set[str]:
+    seq = _dna(sequence)
+    return {seq[index : index + k] for index in range(0, max(0, len(seq) - k + 1))}
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    if not left and not right:
+        return 1.0
+    union = left | right
+    return len(left & right) / len(union) if union else 0.0
+
+
 def _status(ok: bool, warn: bool = False) -> str:
     if ok:
         return "PASS"
@@ -91,6 +114,71 @@ def _markdown(frame: pd.DataFrame, max_rows: int = 30) -> str:
         if pd.api.types.is_float_dtype(current[column]):
             current[column] = current[column].map(lambda value: "" if pd.isna(value) else f"{value:.4f}")
     return current.to_markdown(index=False)
+
+
+def homology_leakage_audit(split_frames: dict[str, pd.DataFrame], center_flank: int = 80, jaccard_threshold: float = 0.90) -> tuple[pd.DataFrame, pd.DataFrame]:
+    records = []
+    for split, frame in split_frames.items():
+        for _, row in frame.iterrows():
+            sequence = _dna(str(row["sequence"]))
+            records.append(
+                {
+                    "split": split,
+                    "sample_id": str(row["sample_id"]),
+                    "gene_id": str(row["gene_id"]),
+                    "label_name": str(row["label_name"]),
+                    "full_hash": _sequence_digest(sequence),
+                    "center_hash": _sequence_digest(_center_window(sequence, center_flank)),
+                    "kmer_set": _kmer_set(sequence),
+                }
+            )
+    audit = pd.DataFrame(records)
+
+    rows = []
+    exact_full_pairs = 0
+    exact_center_pairs = 0
+    high_jaccard_pairs = 0
+    examples = []
+    for left_name, right_name in itertools.combinations(SPLITS, 2):
+        left = audit[audit["split"] == left_name]
+        right = audit[audit["split"] == right_name]
+        full_overlap = set(left["full_hash"]) & set(right["full_hash"])
+        center_overlap = set(left["center_hash"]) & set(right["center_hash"])
+        exact_full_pairs += len(full_overlap)
+        exact_center_pairs += len(center_overlap)
+
+        pair_high = 0
+        for _, left_row in left.iterrows():
+            for _, right_row in right.iterrows():
+                score = _jaccard(left_row["kmer_set"], right_row["kmer_set"])
+                if score >= jaccard_threshold:
+                    pair_high += 1
+                    if len(examples) < 12:
+                        examples.append(
+                            {
+                                "pair": f"{left_name}/{right_name}",
+                                "left_sample_id": left_row["sample_id"],
+                                "right_sample_id": right_row["sample_id"],
+                                "left_gene_id": left_row["gene_id"],
+                                "right_gene_id": right_row["gene_id"],
+                                "kmer_jaccard": score,
+                            }
+                        )
+        high_jaccard_pairs += pair_high
+        rows.append(
+            {
+                "pair": f"{left_name}/{right_name}",
+                "full_sequence_duplicate_hashes": len(full_overlap),
+                "center_161bp_duplicate_hashes": len(center_overlap),
+                f"kmer_jaccard_ge_{jaccard_threshold:.2f}_pairs": pair_high,
+            }
+        )
+
+    summary = pd.DataFrame(rows)
+    summary.attrs["exact_full_pairs"] = exact_full_pairs
+    summary.attrs["exact_center_pairs"] = exact_center_pairs
+    summary.attrs["high_jaccard_pairs"] = high_jaccard_pairs
+    return summary, pd.DataFrame(examples)
 
 
 def load_window_frames(processed_dir: Path) -> dict[int, pd.DataFrame]:
@@ -355,6 +443,12 @@ def build_qc_report(
             }
         )
     split_overlap = pd.DataFrame(chrom_overlap_rows)
+    homology_audit, homology_examples = homology_leakage_audit(split_frames)
+    homology_ok = (
+        int(homology_audit.attrs.get("exact_full_pairs", 0)) == 0
+        and int(homology_audit.attrs.get("exact_center_pairs", 0)) == 0
+        and int(homology_audit.attrs.get("high_jaccard_pairs", 0)) == 0
+    )
 
     length_rows = []
     for window, frame in window_frames.items():
@@ -484,8 +578,8 @@ def build_qc_report(
         },
         {
             "section": "7 Paralog leakage",
-            "status": "WARN",
-            "evidence": "No paralog/homology clustering has been applied; chromosome holdout is used and this remains a stated limitation.",
+            "status": _status(homology_ok),
+            "evidence": "Cross-split full-window duplicates, center-window duplicates, and high 9-mer Jaccard near-duplicates were audited; alignment-level paralog clustering remains out of scope.",
         },
         {
             "section": "8 Reproducibility",
@@ -619,7 +713,15 @@ def build_qc_report(
         "",
         "## 7. 同源 / 旁系泄漏",
         "",
-        "No paralog or homologous-gene clustering was applied. This is a limitation to state in the report. Chromosome holdout and ClinVar test-chromosome restriction reduce, but do not fully eliminate, homology leakage risk.",
+        "Cross-split near-duplicate leakage audit:",
+        "",
+        _markdown(homology_audit),
+        "",
+        "High-similarity examples above the audit threshold, if any:",
+        "",
+        _markdown(homology_examples),
+        "",
+        "Interpretation: this audit checks exact full-window duplicates, exact center 161 bp duplicates, and high 9-mer Jaccard near-duplicates across train/valid/test. It is a practical homology-leakage screen for the current benchmark, but it is not a replacement for alignment-level paralog clustering with tools such as BLAST/CD-HIT/MMseqs.",
         "",
         "## 8. 复现与溯源",
         "",

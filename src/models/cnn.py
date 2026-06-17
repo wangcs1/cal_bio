@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from sklearn.metrics import f1_score
 
 from src.models.feature_extractors import BASE_TO_INDEX, normalize_dna
 
@@ -84,15 +85,28 @@ class CNNBaselineClassifier:
     batch_size: int = 256
     learning_rate: float = 1e-3
     weight_decay: float = 1e-4
+    early_stopping_patience: int = 2
 
     def __post_init__(self) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = _SpliceCNN(n_classes=3).to(self.device)
+        self.best_epoch_: int | None = None
+        self.best_valid_macro_f1_: float | None = None
+        self.epochs_trained_: int = 0
 
-    def fit(self, sequences: list[str], labels: np.ndarray) -> "CNNBaselineClassifier":
+    def fit(
+        self,
+        sequences: list[str],
+        labels: np.ndarray,
+        validation_sequences: list[str] | None = None,
+        validation_labels: np.ndarray | None = None,
+    ) -> "CNNBaselineClassifier":
         torch.manual_seed(self.random_state)
         np.random.seed(self.random_state)
         self.model = _SpliceCNN(n_classes=3).to(self.device)
+        self.best_epoch_ = None
+        self.best_valid_macro_f1_ = None
+        self.epochs_trained_ = 0
         dataset = _SequenceDataset(sequences, labels)
         generator = torch.Generator()
         generator.manual_seed(self.random_state)
@@ -112,9 +126,18 @@ class CNNBaselineClassifier:
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
+        valid_loader = None
+        valid_y = None
+        if validation_sequences is not None and validation_labels is not None and len(validation_sequences) > 0:
+            valid_dataset = _SequenceDataset(validation_sequences, validation_labels)
+            valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False, num_workers=0)
+            valid_y = validation_labels.astype(int)
 
-        self.model.train()
-        for _ in range(self.epochs):
+        best_score = -np.inf
+        best_state: dict[str, torch.Tensor] | None = None
+        stale_epochs = 0
+        for epoch in range(1, self.epochs + 1):
+            self.model.train()
             for x, y in loader:
                 x = x.to(self.device)
                 y = y.to(self.device)
@@ -122,15 +145,39 @@ class CNNBaselineClassifier:
                 loss = criterion(self.model(x), y)
                 loss.backward()
                 optimizer.step()
+            self.epochs_trained_ = epoch
+
+            if valid_loader is None or valid_y is None:
+                continue
+
+            proba = self._predict_proba_loader(valid_loader)
+            score = float(f1_score(valid_y, np.argmax(proba, axis=1), average="macro", zero_division=0))
+            if score > best_score + 1e-12:
+                best_score = score
+                self.best_epoch_ = epoch
+                self.best_valid_macro_f1_ = score
+                best_state = {key: value.detach().cpu().clone() for key, value in self.model.state_dict().items()}
+                stale_epochs = 0
+            else:
+                stale_epochs += 1
+                if stale_epochs >= self.early_stopping_patience:
+                    break
+
+        if best_state is not None:
+            self.model.load_state_dict(best_state)
         return self
 
     def predict_proba(self, sequences: list[str]) -> np.ndarray:
         dataset = _SequenceDataset(sequences)
         loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=0)
+        return self._predict_proba_loader(loader)
+
+    def _predict_proba_loader(self, loader: DataLoader) -> np.ndarray:
         chunks: list[np.ndarray] = []
         self.model.eval()
         with torch.no_grad():
-            for x in loader:
+            for batch in loader:
+                x = batch[0] if isinstance(batch, (list, tuple)) else batch
                 x = x.to(self.device)
                 proba = torch.softmax(self.model(x), dim=1).cpu().numpy()
                 chunks.append(proba)

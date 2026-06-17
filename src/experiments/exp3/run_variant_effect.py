@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.data.build_clinvar_variant_dataset import build_clinvar_smoke, build_clinvar_variants
+from src.data.build_clinvar_variant_dataset import build_clinvar_smoke as build_clinvar_format_control, build_clinvar_variants
 from src.data.build_splice_site_dataset import build_and_write_real
-from src.data.build_sqtl_variant_dataset import build_sqtl_smoke
+from src.data.build_sqtl_variant_dataset import build_sqtl_smoke as build_sqtl_format_control
 from src.experiments.exp1.common import make_model
 from src.utils import (
     BASES,
@@ -109,7 +109,7 @@ def write_report(
         "- `results/experiment_3/tables/experiment_3A_variant_scores.csv`",
         "- `results/experiment_3/tables/experiment_3A_variant_metrics.csv`",
         "- `results/experiment_3/tables/variant_effect_stratified_by_type.csv`",
-        "- `results/experiment_3/tables/experiment_3B_clinvar_smoke_metrics.csv`",
+        "- `results/experiment_3/tables/experiment_3B_format_control_metrics.csv`",
         "- `results/experiment_3/tables/experiment_3C_sqtl_case_study.csv`",
         "- `results/experiment_3/figures/exp3_variant_auroc.png`",
         "- `results/experiment_3/figures/exp3_variant_auprc.png`",
@@ -698,7 +698,7 @@ def run(
     plot_delta_boxplot(scores, output_figures)
     plot_variant_type_summary(variant_summary, output_figures)
     run_saturation(models, output_tables, output_figures)
-    clinvar = run_clinvar_smoke(output_tables, output_figures, models)
+    clinvar = run_clinvar_format_control(output_tables, output_figures, models)
     sqtl = run_sqtl_case_study(output_tables, models)
     variant_counts = (
         variants.groupby(["variant_type", "label_name"], as_index=False)
@@ -717,27 +717,27 @@ def run(
     }
 
 
-def run_clinvar_smoke(output_tables: Path, output_figures: Path, models: list[object]) -> pd.DataFrame:
-    clinvar = build_clinvar_smoke()
+def run_clinvar_format_control(output_tables: Path, output_figures: Path, models: list[object]) -> pd.DataFrame:
+    clinvar = build_clinvar_format_control()
     scores = score_variants(models, clinvar)
     metrics = summarize_metrics(scores)
-    write_dataframe(output_tables / "experiment_3B_clinvar_smoke_scores.csv", scores)
-    write_dataframe(output_tables / "experiment_3B_clinvar_smoke_metrics.csv", metrics)
+    write_dataframe(output_tables / "experiment_3B_format_control_scores.csv", scores)
+    write_dataframe(output_tables / "experiment_3B_format_control_metrics.csv", metrics)
     best = scores[scores["model"] == metrics.iloc[0]["model"]].copy()
     fig, ax = plt.subplots(figsize=(7.5, 4.4))
     best.boxplot(column="impact_score", by="label_name", ax=ax)
-    ax.set_title("ClinVar smoke scores")
+    ax.set_title("ClinVar format-control scores")
     ax.set_xlabel("Label")
     ax.set_ylabel("Impact score")
     fig.suptitle("")
     fig.tight_layout()
-    fig.savefig(output_figures / "exp3_clinvar_smoke_scores.png", dpi=180)
+    fig.savefig(output_figures / "exp3_clinvar_format_control_scores.png", dpi=180)
     plt.close(fig)
     return metrics
 
 
 def run_sqtl_case_study(output_tables: Path, models: list[object]) -> pd.DataFrame:
-    sqtl = build_sqtl_smoke()
+    sqtl = build_sqtl_format_control()
     scored = []
     model = models[0]
     for _, row in sqtl.iterrows():

@@ -209,21 +209,10 @@ def run_hard_negative(random_state: int, window: int = 200) -> pd.DataFrame:
 def run_rare_motif_case(random_state: int, output_tables: Path) -> pd.DataFrame:
     rare_path = shared_processed_file("rare_motif_splice_sites.csv")
     if not rare_path.exists():
-        result = pd.DataFrame(
-            [
-                {
-                    "model": "not_run",
-                    "motif_type": "synthetic_control_missing",
-                    "rows": 0,
-                    "mean_target_probability": float("nan"),
-                    "accuracy": float("nan"),
-                    "macro_f1": float("nan"),
-                    "data_source": "synthetic rare-motif control not generated",
-                }
-            ]
+        raise FileNotFoundError(
+            f"Rare-motif stress-test table is required by the current report but was not found: {rare_path}. "
+            "Regenerate processed data before running experiment 2; the benchmark does not write placeholder not_run rows."
         )
-        write_dataframe(output_tables / "experiment_2B_rare_motif.csv", result)
-        return result
     rare = read_csv(rare_path)
     train = read_csv(shared_split_file("train_pm200.csv"))
     valid = read_csv(shared_split_file("valid_pm200.csv"))

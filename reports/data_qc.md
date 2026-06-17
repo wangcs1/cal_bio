@@ -5,23 +5,23 @@ QC target: real GENCODE/GRCh38 splice-site benchmark plus real ClinVar variant b
 Important sampling definitions:
 
 - Splice-site benchmark: donor / acceptor / non-splice hard-negative = 1:1:1 globally; binary positive base rate is 2000/3000 = 0.667.
-- Negative splice-site examples: all real benchmark negatives are motif-matched GT/AG hard negatives; easy negatives are kept only for optional synthetic controls.
+- Negative splice-site examples: all real benchmark negatives are motif-matched GT/AG hard negatives; easy negatives are kept only for supplementary synthetic controls.
 - ClinVar benchmark: pathogenic or likely pathogenic splice-related/near-splice SNVs vs benign or likely benign near-splice SNVs, balanced 250/250.
 - ClinVar variants are restricted to held-out test chromosomes chr19, chr20, chr21, chr22, chrX and exclude genes already sampled in experiment 1/2 splits.
 
 ## Checklist Status
 
-| section                        | status   | evidence                                                                                                                                |
-|:-------------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------|
-| 1 Split integrity              | PASS     | Four windows share identical sample_id/split assignments; train/valid/test chromosomes and IDs are disjoint.                            |
-| 2 Class balance                | PASS     | Three-class sampling is donor:acceptor:hard-negative = 1:1:1 globally; easy negatives are intentionally not used in the real benchmark. |
-| 3 Sequence QC                  | PASS     | Window lengths, alphabet, N fraction, and canonical donor/acceptor motif checks passed.                                                 |
-| 4 Hard negatives               | PASS     | Hard negatives carry GT/AG decoys; overlap with GTF annotated splice sites = 0.                                                         |
-| 5 Coordinates and strand       | PASS     | Positive motif checks pass after transcript-oriented reverse complement, including negative-strand records.                             |
-| 6 ClinVar                      | PASS     | ClinVar is balanced 250/250 on held-out chromosomes; REF and one-SNV WT/Mut checks passed; no sampled split gene is reused.             |
-| 7 Paralog leakage              | WARN     | No paralog/homology clustering has been applied; chromosome holdout is used and this remains a stated limitation.                       |
-| 8 Reproducibility              | PASS     | Seed 42, GRCh38/GENCODE metadata, ClinVar fileDate, commands, and local resource status are recorded.                                   |
-| 9 Cross-experiment consistency | PASS     | Experiments use GRCh38; ClinVar variants are restricted to the same held-out test chromosomes used by experiment 1/2.                   |
+| section                        | status   | evidence                                                                                                                                                                    |
+|:-------------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 Split integrity              | PASS     | Four windows share identical sample_id/split assignments; train/valid/test chromosomes and IDs are disjoint.                                                                |
+| 2 Class balance                | PASS     | Three-class sampling is donor:acceptor:hard-negative = 1:1:1 globally; easy negatives are intentionally not used in the real benchmark.                                     |
+| 3 Sequence QC                  | PASS     | Window lengths, alphabet, N fraction, and canonical donor/acceptor motif checks passed.                                                                                     |
+| 4 Hard negatives               | PASS     | Hard negatives carry GT/AG decoys; overlap with GTF annotated splice sites = 0.                                                                                             |
+| 5 Coordinates and strand       | PASS     | Positive motif checks pass after transcript-oriented reverse complement, including negative-strand records.                                                                 |
+| 6 ClinVar                      | PASS     | ClinVar is balanced 250/250 on held-out chromosomes; REF and one-SNV WT/Mut checks passed; no sampled split gene is reused.                                                 |
+| 7 Paralog leakage              | PASS     | Cross-split full-window duplicates, center-window duplicates, and high 9-mer Jaccard near-duplicates were audited; alignment-level paralog clustering remains out of scope. |
+| 8 Reproducibility              | PASS     | Seed 42, GRCh38/GENCODE metadata, ClinVar fileDate, commands, and local resource status are recorded.                                                                       |
+| 9 Cross-experiment consistency | PASS     | Experiments use GRCh38; ClinVar variants are restricted to the same held-out test chromosomes used by experiment 1/2.                                                       |
 
 ## 1. Split 完整性与防泄漏
 
@@ -173,7 +173,7 @@ Model metrics on the distance-matched subset, if experiment-3 scores have been g
 |:----------|:------------------------------|-------:|-------------------------:|-------------------------:|
 | available | RNA-FM frozen encoder + MLP   |    326 |                   0.6684 |                   0.6559 |
 | available | Pangolin real sequence model  |    326 |                   0.5902 |                   0.6416 |
-| available | CNN baseline (PyTorch Conv1D) |    326 |                   0.5625 |                   0.5666 |
+| available | CNN baseline (PyTorch Conv1D) |    326 |                   0.558  |                   0.565  |
 | available | RNABERT frozen encoder + MLP  |    326 |                   0.5155 |                   0.5442 |
 | available | SpliceAI real sequence model  |    326 |                   0.5135 |                   0.5693 |
 | available | MMSplice real sequence model  |    326 |                   0.5    |                   0.5    |
@@ -201,7 +201,19 @@ Gain classes: not modeled as separate donor_gain/acceptor_gain labels in the rea
 
 ## 7. 同源 / 旁系泄漏
 
-No paralog or homologous-gene clustering was applied. This is a limitation to state in the report. Chromosome holdout and ClinVar test-chromosome restriction reduce, but do not fully eliminate, homology leakage risk.
+Cross-split near-duplicate leakage audit:
+
+| pair        |   full_sequence_duplicate_hashes |   center_161bp_duplicate_hashes |   kmer_jaccard_ge_0.90_pairs |
+|:------------|---------------------------------:|--------------------------------:|-----------------------------:|
+| train/valid |                                0 |                               0 |                            0 |
+| train/test  |                                0 |                               0 |                            0 |
+| valid/test  |                                0 |                               0 |                            0 |
+
+High-similarity examples above the audit threshold, if any:
+
+_No rows._
+
+Interpretation: this audit checks exact full-window duplicates, exact center 161 bp duplicates, and high 9-mer Jaccard near-duplicates across train/valid/test. It is a practical homology-leakage screen for the current benchmark, but it is not a replacement for alignment-level paralog clustering with tools such as BLAST/CD-HIT/MMseqs.
 
 ## 8. 复现与溯源
 

@@ -23,11 +23,23 @@ def train_one(
     model = make_model(model_key, seed)
 
     started = time.time()
-    model.fit(train["sequence"].astype(str).tolist(), train["label"].to_numpy())
+    train_sequences = train["sequence"].astype(str).tolist()
+    train_labels = train["label"].to_numpy()
+    valid_sequences = valid["sequence"].astype(str).tolist()
+    valid_labels = valid["label"].to_numpy()
+    try:
+        model.fit(
+            train_sequences,
+            train_labels,
+            validation_sequences=valid_sequences,
+            validation_labels=valid_labels,
+        )
+    except TypeError:
+        model.fit(train_sequences, train_labels)
     seconds = time.time() - started
 
-    proba = model.predict_proba(valid["sequence"].astype(str).tolist())
-    metrics = multiclass_metrics(valid["label"].to_numpy(), proba)
+    proba = model.predict_proba(valid_sequences)
+    metrics = multiclass_metrics(valid_labels, proba)
     checkpoint = checkpoint_dir / f"{model_key}.joblib"
     save_model(checkpoint, model)
 
@@ -39,6 +51,9 @@ def train_one(
         "valid_rows": len(valid),
         "fit_seconds": seconds,
         "checkpoint": str(checkpoint),
+        "best_epoch": getattr(model, "best_epoch_", None),
+        "best_valid_macro_f1": getattr(model, "best_valid_macro_f1_", None),
+        "epochs_trained": getattr(model, "epochs_trained_", None),
         **metrics,
     }
 
