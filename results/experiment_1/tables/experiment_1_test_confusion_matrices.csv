@@ -1,4 +1,4 @@
-model,split,true_label,true_label_name,pred_label,pred_label_name,count
+﻿model,split,true_label,true_label_name,pred_label,pred_label_name,count
 CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,9704
 CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,15
 CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,281

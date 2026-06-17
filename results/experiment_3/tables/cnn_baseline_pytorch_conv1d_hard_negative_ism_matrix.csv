@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 CNN baseline (PyTorch Conv1D),hard_negative,ss_009179ffb87ba1a9,-30,A,-0.0001856088638305664
 CNN baseline (PyTorch Conv1D),hard_negative,ss_009179ffb87ba1a9,-30,C,-8.52346420288086e-05
 CNN baseline (PyTorch Conv1D),hard_negative,ss_009179ffb87ba1a9,-30,G,-2.3245811462402344e-05

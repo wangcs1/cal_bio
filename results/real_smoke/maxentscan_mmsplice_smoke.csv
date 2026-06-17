@@ -1,4 +1,4 @@
-model,input,score_name,score
+﻿model,input,score_name,score
 MaxEntScan,CAGGTAAGT,score5_donor,10.858313101356437
 MaxEntScan,TTTTTTTTTTTTTTTTTTTTAGG,score3_acceptor,-6.234058765132626
 MMSplice,synthetic_splice_context_overhang_80_0,module_0,-2.9407379627227783

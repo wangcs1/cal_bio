@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 CNN baseline (PyTorch Conv1D),donor,ss_03c8629dbfce2d90,-30,A,0.00014442205429077148
 CNN baseline (PyTorch Conv1D),donor,ss_03c8629dbfce2d90,-30,C,5.46574592590332e-05
 CNN baseline (PyTorch Conv1D),donor,ss_03c8629dbfce2d90,-30,G,0.00015717744827270508

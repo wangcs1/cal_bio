@@ -1,4 +1,4 @@
-# TODO Completion Audit: Real-Data Benchmark Revision
+﻿# TODO Completion Audit: Real-Data Benchmark Revision
 
 本轮整改目标：把 TODO 中此前未完成的验证、训练策略和审计项全部落地，并同步实验结果、图表和论文文字。
 
@@ -71,3 +71,22 @@
 - 多尺度上下文影响模型表现，但趋势非单调。
 - Full ClinVar 中 RNA-FM frozen encoder + MLP 排名最高；distance-matched 子集上整体下降，说明近剪接距离是重要混杂因素。
 - 当前结果支持真实小样本排序诊断，不支持全基因组泛化、临床级变异解释、组织特异性剪接建模或 alignment-level paralog/homology 去重后的强结论。
+
+## 当前新增任务：只补多随机种子
+
+- [x] 实验一保留现有 `scripts/run_exp1_multiseed.py --full-data`。
+- [x] 为实验二补 42/43/44 多 seed 汇总。
+- [x] 为实验三补 42/43/44 多 seed 汇总。
+- [x] 本轮只新增多 seed 脚本和多 seed 结果表，不追加统计诊断、环境快照或模型重命名。
+
+## 本轮新增多 seed 输出
+
+- `scripts/run_exp2_exp3_multiseed.py`
+- `results/experiment_2/tables/experiment_2_multiseed_metrics.csv`
+- `results/experiment_2/tables/experiment_2_multiseed_summary.csv`
+- `results/experiment_2/tables/experiment_2_multiseed_hard_negative_metrics.csv`
+- `results/experiment_2/tables/experiment_2_multiseed_hard_negative_summary.csv`
+- `results/experiment_3/tables/experiment_3_multiseed_metrics.csv`
+- `results/experiment_3/tables/experiment_3_multiseed_summary.csv`
+- `results/experiment_3/tables/experiment_3_multiseed_distance_matched_metrics.csv`
+- `results/experiment_3/tables/experiment_3_multiseed_distance_matched_summary.csv`

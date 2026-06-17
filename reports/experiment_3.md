@@ -1,4 +1,4 @@
-# Experiment 3: Aberrant Splicing Variant Effects
+﻿# Experiment 3: Aberrant Splicing Variant Effects
 
 Variant table: `data\experiment_3\clinvar_splicing_variants.csv`
 
@@ -28,7 +28,6 @@ External tools are executed through a Python 3.10 splice-tool environment and me
 ## 3B Distance-Matched ClinVar Ranking
 
 This diagnostic evaluates the same scores on an exact-distance-matched ClinVar subset to reduce the `closer to splice site = more likely pathogenic` shortcut.
-
 | model                         | source             |   auroc |   auprc |   top_k |   top_k_recall |   enrichment_at_k |   variants |
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.6684 |  0.6559 |      33 |         0.135  |            1.3333 |        326 |

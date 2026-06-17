@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import os
@@ -45,8 +45,8 @@ def plot_confusion(confusion: pd.DataFrame, out_dir: Path) -> None:
     models.extend([model for model in available if model not in models])
     short_names = {
         "CNN baseline (PyTorch Conv1D)": "CNN baseline",
-        "RNA-FM frozen encoder + MLP": "RNA-FM frozen encoder",
-        "RNABERT frozen encoder + MLP": "RNABERT frozen encoder",
+        "RNA-FM frozen encoder + MLP": "RNA-FM frozen",
+        "RNABERT frozen encoder + MLP": "RNABERT frozen",
     }
     fig, axes = plt.subplots(1, len(models), figsize=(4.35 * len(models), 4.15), squeeze=False)
     fig.patch.set_facecolor("#fbf7ef")

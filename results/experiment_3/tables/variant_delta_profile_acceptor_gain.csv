@@ -1,4 +1,4 @@
-variant_id,variant_type,relative_position,donor_score,acceptor_score,sequence_type
+﻿variant_id,variant_type,relative_position,donor_score,acceptor_score,sequence_type
 var_885a2b00f88745bf,acceptor_gain,-80,0.27803030303030296,0.0,WT
 var_885a2b00f88745bf,acceptor_gain,-79,0.28939393939393937,0.5693333333333332,WT
 var_885a2b00f88745bf,acceptor_gain,-78,0.1984848484848485,0.0,WT

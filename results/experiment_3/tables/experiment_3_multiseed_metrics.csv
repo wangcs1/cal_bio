@@ -1,0 +1,10 @@
+seed,model,source,auroc,auprc,top_k,top_k_recall,enrichment_at_k,variants
+42,RNA-FM frozen encoder + MLP,trained_classifier,0.7532,0.783894708587813,50.0,0.196,1.96,500
+42,CNN baseline (PyTorch Conv1D),trained_classifier,0.701872,0.7404042194772595,50.0,0.196,1.96,500
+42,RNABERT frozen encoder + MLP,trained_classifier,0.66728,0.7326115968315969,50.0,0.196,1.96,500
+43,RNA-FM frozen encoder + MLP,trained_classifier,0.7532,0.783894708587813,50.0,0.196,1.96,500
+43,CNN baseline (PyTorch Conv1D),trained_classifier,0.686592,0.7407971261290729,50.0,0.196,1.96,500
+43,RNABERT frozen encoder + MLP,trained_classifier,0.66728,0.7326115968315969,50.0,0.196,1.96,500
+44,RNA-FM frozen encoder + MLP,trained_classifier,0.7532,0.783894708587813,50.0,0.196,1.96,500
+44,RNABERT frozen encoder + MLP,trained_classifier,0.66728,0.7326115968315969,50.0,0.196,1.96,500
+44,CNN baseline (PyTorch Conv1D),trained_classifier,0.67768,0.7325814331380378,50.0,0.2,2.0,500

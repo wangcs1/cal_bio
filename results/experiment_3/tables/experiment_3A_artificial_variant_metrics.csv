@@ -1,4 +1,4 @@
-model,source,auroc,auprc,top_k,top_k_recall,enrichment_at_k,variants
+﻿model,source,auroc,auprc,top_k,top_k_recall,enrichment_at_k,variants
 CNN baseline (PyTorch Conv1D),trained_classifier,0.7136507936507936,0.8692644690173821,46.0,0.16428571428571428,1.6428571428571428,460
 RNABERT frozen encoder + MLP,trained_classifier,0.682797619047619,0.8502948211278228,46.0,0.16428571428571428,1.6428571428571428,460
 Pangolin real sequence model,real_external_tool,0.6852579365079364,0.8368264522552182,46.0,0.16428571428571428,1.6428571428571428,460

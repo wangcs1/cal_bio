@@ -1,4 +1,4 @@
-model,source,variant_type,mean_score,median_score,rows,positive_rate
+﻿model,source,variant_type,mean_score,median_score,rows,positive_rate
 CNN baseline (PyTorch Conv1D),trained_classifier,acceptor_clinvar_splice,0.13536711277585503,0.0020589232444763184,141,1.0
 CNN baseline (PyTorch Conv1D),trained_classifier,clinvar_benign_snv,0.010647775953635573,0.00042751431465148926,250,0.0
 CNN baseline (PyTorch Conv1D),trained_classifier,donor_clinvar_splice,0.07781830063269157,0.0021233558654785156,109,1.0

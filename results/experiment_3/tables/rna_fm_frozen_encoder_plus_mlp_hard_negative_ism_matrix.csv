@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 RNA-FM frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,A,-9.76282676220519e-05
 RNA-FM frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,C,8.873068561887631e-05
 RNA-FM frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,G,0.0002804166463274971

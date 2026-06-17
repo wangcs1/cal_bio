@@ -1,4 +1,4 @@
-chrom,pos,ref,alt,spliceai_info
+﻿chrom,pos,ref,alt,spliceai_info
 1,69134,A,G,G|OR4F5|0.00|0.00|0.02|0.03|45|-1|-19|-1
 1,69241,C,T,T|OR4F5|0.00|0.00|0.01|0.00|19|9|-25|-34
 1,69308,A,G,G|OR4F5|0.01|0.00|0.00|0.00|-12|26|1|31

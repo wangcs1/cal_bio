@@ -1,4 +1,4 @@
-# Experiment 2: Context Scale And Hard Negatives
+﻿# Experiment 2: Context Scale And Hard Negatives
 
 This run uses only the implemented real-model set: CNN baseline, RNA-FM frozen encoder, and RNABERT frozen encoder.
 RNA-FM/RNABERT require local pretrained weights under `models/hf/`; the report contains only real-model rows.

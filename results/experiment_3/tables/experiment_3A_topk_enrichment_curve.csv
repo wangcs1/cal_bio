@@ -1,4 +1,4 @@
-model,fraction,k,positive_count,precision,recall,enrichment
+﻿model,fraction,k,positive_count,precision,recall,enrichment
 CNN baseline (PyTorch Conv1D),0.02,10,10,1.0,0.04,2.0
 CNN baseline (PyTorch Conv1D),0.05,25,25,1.0,0.1,2.0
 CNN baseline (PyTorch Conv1D),0.1,50,49,0.98,0.196,1.96

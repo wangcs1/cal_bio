@@ -1,4 +1,4 @@
-variant_id,variant_type,relative_position,donor_score,acceptor_score,sequence_type
+﻿variant_id,variant_type,relative_position,donor_score,acceptor_score,sequence_type
 clinvar_7bafc367a1a1db50,donor_clinvar_splice,-80,0.09924242424242424,0.20266666666666666,WT
 clinvar_7bafc367a1a1db50,donor_clinvar_splice,-79,0.5083333333333333,0.21333333333333332,WT
 clinvar_7bafc367a1a1db50,donor_clinvar_splice,-78,0.008333333333333333,0.5033333333333333,WT

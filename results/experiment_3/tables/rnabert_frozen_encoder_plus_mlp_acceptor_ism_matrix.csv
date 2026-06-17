@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 RNABERT frozen encoder + MLP,acceptor,ss_0693afbde42851e8,-30,A,0.07770198539122475
 RNABERT frozen encoder + MLP,acceptor,ss_0693afbde42851e8,-30,C,0.0
 RNABERT frozen encoder + MLP,acceptor,ss_0693afbde42851e8,-30,G,0.07860571923424242

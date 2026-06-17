@@ -1,4 +1,4 @@
-window_flank,model,split,true_label,true_label_name,pred_label,pred_label_name,count
+﻿window_flank,model,split,true_label,true_label_name,pred_label,pred_label_name,count
 50,CNN baseline (PyTorch Conv1D),test,0,donor,0,donor,123
 50,CNN baseline (PyTorch Conv1D),test,0,donor,1,acceptor,0
 50,CNN baseline (PyTorch Conv1D),test,0,donor,2,non_splice,6

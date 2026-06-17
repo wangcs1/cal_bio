@@ -1,4 +1,4 @@
-# 数据质控结果
+﻿# 数据质控结果
 
 QC target: real GENCODE/GRCh38 splice-site benchmark plus real ClinVar variant benchmark.
 

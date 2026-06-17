@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 RNABERT frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,A,0.004053817566302409
 RNABERT frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,C,0.00033152050322082793
 RNABERT frozen encoder + MLP,hard_negative,ss_009179ffb87ba1a9,-30,G,0.005857853311554084

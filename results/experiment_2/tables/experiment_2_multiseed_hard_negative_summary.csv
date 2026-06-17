@@ -1,0 +1,4 @@
+model,seeds,runs,test_hard_macro_f1_mean,test_hard_macro_f1_std,cross_gene_macro_f1_mean,cross_gene_macro_f1_std,hard_negative_fpr_mean,hard_negative_fpr_std
+CNN baseline (PyTorch Conv1D),"42,43,44",3,0.8280422203146632,0.007580754104593725,0.8280422203146632,0.007580754104593725,0.30967741935483867,0.0487086092598113
+RNA-FM frozen encoder + MLP,"42,43,44",3,0.7869068064474994,0.0,0.7869068064474994,0.0,0.3096774193548387,0.0
+RNABERT frozen encoder + MLP,"42,43,44",3,0.814936773046732,0.0,0.814936773046732,0.0,0.32903225806451614,0.0

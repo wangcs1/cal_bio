@@ -1,4 +1,4 @@
-model,motif_type,rows,mean_target_probability,accuracy,macro_f1,data_source
+﻿model,motif_type,rows,mean_target_probability,accuracy,macro_f1,data_source
 CNN baseline (PyTorch Conv1D),rare_AT-AC_acceptor,40,0.1839487149147317,0.1,0.09090909090909091,synthetic rare-motif small case study
 CNN baseline (PyTorch Conv1D),rare_GC-AG_donor,40,0.9909834071993828,1.0,1.0,synthetic rare-motif small case study
 RNA-FM frozen encoder + MLP,rare_AT-AC_acceptor,40,0.12884003033254765,0.1,0.06060606060606061,synthetic rare-motif small case study

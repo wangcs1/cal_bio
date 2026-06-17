@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 RNA-FM frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,A,3.5085972160953105e-07
 RNA-FM frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,C,1.4591089314563988e-07
 RNA-FM frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,G,-6.501885407850239e-08

@@ -1,4 +1,4 @@
-model,case,sample_id,relative_position,alt_base,importance
+﻿model,case,sample_id,relative_position,alt_base,importance
 RNABERT frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,A,-0.002496843497165835
 RNABERT frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,C,-0.003380139330803944
 RNABERT frozen encoder + MLP,donor,ss_03c8629dbfce2d90,-30,G,-0.0032430541901328214
