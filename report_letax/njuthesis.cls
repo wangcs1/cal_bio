@@ -82,6 +82,7 @@
 \tl_new:N \g__nju_info_supvfull_en_tl
 \tl_new:N \g__nju_info_major_tl
 \tl_new:N \g__nju_info_majorc_tl
+\tl_new:N \g__nju_info_course_tl
 \tl_new:N \g__nju_font_set_tl
 \tl_new:N \g__nju_font_latin_tl
 \tl_new:N \g__nju_font_cjk_tl
@@ -905,6 +906,7 @@
     keywords*       .clist_gset:N = \g__nju_info_keywords_en_clist    ,
     grade              .tl_gset:N = \g__nju_info_grade_tl             ,
     student-id         .tl_gset:N = \g__nju_info_id_tl                ,
+    course             .tl_gset:N = \g__nju_info_course_tl           ,
     author             .tl_gset:N = \g__nju_info_author_tl            ,
     author*            .tl_gset:N = \g__nju_info_author_en_tl         ,
     department         .tl_gset:N = \g__nju_info_dept_tl              ,

@@ -14,26 +14,41 @@
 \usepackage{float}
 \usepackage{array}
 
+% 给段落应急拉伸量，配合 \codepath 的断点消除长路径凸出右边距的 overfull
+\setlength{\emergencystretch}{3em}
+
 \njusetup[info]{
-    title = {小样本条件下 RNA 剪接位点识别\\多尺度上下文分析与异常剪接变异效应预测},
+    title = {小样本条件下 RNA 剪接位点识别：多尺度上下文分析与异常剪接变异效应预测},
     title* = {RNA Splice Site Recognition, Context Analysis, and Aberrant Splicing Variant Effect Prediction under Small-Sample Settings},
-    author = {课程项目小组},
+    author = {王辰崧,孙洪涛,汤志远,林锦程},
     author* = {Course Project Team},
     keywords = {RNA 剪接,剪接位点识别,多尺度上下文,变异效应预测,可解释性},
     keywords* = {RNA splicing,splice site recognition,multi-scale context,variant effect prediction,interpretability},
     grade = {2026},
     student-id = {---},
     department = {智能科学与技术学院},
-    department* = {School of Artificial Intelligence},
-    major = {计算生物学},
-    major* = {Computational Biology},
+    department* = {School of Intelligence Science and Technology},
+    major = {智能科学与技术},
+    major* = {Intelligence Science and Technology},
+    course = {计算生物学},
     supervisor = {王博岩},
     supervisor*= {Boyan Wang},
     submit-date = {2026-06-13}
 }
 
 \njusetname{type}{课程项目报告}
-\newcommand{\codepath}[1]{\texttt{\detokenize{#1}}}
+% 路径专用等宽字体：Consolas（缩放到与正文小写齐高），不影响全局 \ttfamily
+\newfontfamily\codefont{Consolas}[Scale=MatchLowercase]
+% 等宽路径：在 / _ . - 之后插入零宽断点，避免长路径顶出右边距
+\ExplSyntaxOn
+\tl_new:N \l__nju_codepath_tl
+\NewDocumentCommand \codepath { m }
+  {
+    \tl_set:Nx \l__nju_codepath_tl { \tl_to_str:n {#1} }
+    \regex_replace_all:nnN { [/_.\-] } { \0 \c{allowbreak} } \l__nju_codepath_tl
+    { \codefont \tl_use:N \l__nju_codepath_tl }
+  }
+\ExplSyntaxOff
 \newcommand{\metric}[1]{\ensuremath{#1}}
 
 \begin{document}

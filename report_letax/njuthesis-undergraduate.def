@@ -52,16 +52,11 @@
   }
 \cs_new_protected:Npn \__nju_u_cover_info:NNNNN #1#2#3#4#5
   {
-    \__nju_cover_entry:NNNn #1 #3 #5 { dept  }
-    \__nju_cover_entry:NNNn #1 #3 #5 { major }
+    \__nju_cover_entry:NNNn #1 #3 #5 { dept   }
+    \__nju_cover_entry:NNNn #1 #3 #5 { major  }
+    \__nju_cover_entry:NNNn #1 #3 #5 { course }
     \__nju_cover_entry_title:NNN #1 #3 #5
-    \dim_set:Nn \l__nju_tmpb_dim { #3 * 1/2 - #2 * 1/2 - #4 }
-    \__nju_cover_entry:NNNNnn #1 #2 \l__nju_tmpb_dim #5 { grade } { id }
     \__nju_cover_entry:NNNn #1 #3 #5 { author }
-    \__nju_cover_entry_supv:NNNNn #1 #2 \l__nju_tmpb_dim #5 { supv }
-    \bool_if:NT \g__nju_opt_supvii_bool
-      { \__nju_cover_entry_supv:NNNNn #1 #2 \l__nju_tmpb_dim #5 { supvii } }
-    \__nju_cover_entry:NNNn #1 #3 #5 { submitdate }
   }
 \cs_new:Npn \__nju_u_cover_info:
   {
@@ -222,6 +217,7 @@
     { blankdate   a } { \njuline{\qquad\qquad} 年
             \njuline{\qquad} 月 \njuline{\qquad} 日      } {      },
     { colon         } { ：\hskip 0pt minus .4em } { : \c_space_tl },
+    { course        } { 课程            } { COURSE                },
     { dept          } { 学院            } { DEPARTMENT            },
     { figure        } { 图              } { figure                },
     { keywords      } { 关键词          } { KEYWORDS              },

@@ -17,6 +17,7 @@ import pandas as pd
 from src.data.build_clinvar_variant_dataset import build_clinvar_smoke as build_clinvar_format_control, build_clinvar_variants
 from src.data.build_splice_site_dataset import build_and_write_real
 from src.experiments.exp3.run_variant_effect import saturation_matrix, train_models
+from src.reports import fig_style
 from src.utils import (
     BASES,
     EXP2_FIGURES_DIR,
@@ -43,18 +44,19 @@ def ensure_inputs() -> None:
 def plot_matrix(matrix: pd.DataFrame, out_path: Path, title: str) -> None:
     pivot = matrix.pivot(index="alt_base", columns="relative_position", values="importance").loc[list(BASES)]
     fig, ax = plt.subplots(figsize=(12, 3.4))
+    fig_style.style_axes(ax, frame=True)
     vmax = max(0.05, float(np.nanmax(np.abs(pivot.to_numpy()))))
-    image = ax.imshow(pivot.to_numpy(), aspect="auto", cmap="coolwarm", vmin=-vmax, vmax=vmax)
+    image = ax.imshow(pivot.to_numpy(), aspect="auto", cmap=fig_style.HEATMAP_CMAP, vmin=-vmax, vmax=vmax)
     ax.set_yticks(range(len(BASES)), labels=list(BASES))
     tick_positions = np.linspace(0, pivot.shape[1] - 1, 11, dtype=int)
     ax.set_xticks(tick_positions, labels=[str(pivot.columns[i]) for i in tick_positions])
     ax.set_xlabel("Relative position")
     ax.set_ylabel("Alternative base")
-    ax.set_title(title)
-    fig.colorbar(image, ax=ax, label="Target probability drop")
+    ax.set_title(title, fontsize=13, fontweight="bold", loc="left")
+    cbar = fig.colorbar(image, ax=ax, label="Target probability drop", fraction=0.025, pad=0.012)
+    fig_style.style_colorbar(cbar)
     fig.tight_layout()
-    fig.savefig(out_path, dpi=180)
-    plt.close(fig)
+    fig_style.save(fig, out_path)
 
 
 def run_ism(out_tables: Path, out_figures: Path, random_state: int) -> None:
@@ -96,21 +98,23 @@ def plot_delta_profile(variant: pd.Series, out_path: Path, title: str) -> pd.Dat
     wt["sequence_type"] = "WT"
     mut["sequence_type"] = "Mut"
     combined = pd.concat([wt, mut], ignore_index=True)
+    line_colors = {"WT": fig_style.WT_COLOR, "Mut": fig_style.MUT_COLOR}
     fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.2), sharex=True)
     for seq_type, group in combined.groupby("sequence_type"):
-        axes[0].plot(group["relative_position"], group["donor_score"], label=seq_type, linewidth=2)
-        axes[1].plot(group["relative_position"], group["acceptor_score"], label=seq_type, linewidth=2)
+        color = line_colors.get(str(seq_type), fig_style.WT_COLOR)
+        axes[0].plot(group["relative_position"], group["donor_score"], label=seq_type, linewidth=2, color=color)
+        axes[1].plot(group["relative_position"], group["acceptor_score"], label=seq_type, linewidth=2, color=color)
     axes[0].set_ylabel("Donor score")
     axes[1].set_ylabel("Acceptor score")
     axes[1].set_xlabel("Relative position")
     for ax in axes:
-        ax.axvline(int(variant["relative_pos"]), color="#b13f3f", linestyle="--", linewidth=1.3)
-        ax.grid(alpha=0.25)
-        ax.legend()
-    fig.suptitle(title)
+        fig_style.style_axes(ax)
+        ax.axvline(int(variant["relative_pos"]), color=fig_style.ACCENT, linestyle="--", linewidth=1.3, label="variant")
+        ax.grid(alpha=0.30, color=fig_style.GRID)
+        ax.legend(frameon=False, fontsize=8.5, labelcolor=fig_style.DARK)
+    fig.suptitle(title, color=fig_style.DARK, fontsize=13, fontweight="bold")
     fig.tight_layout()
-    fig.savefig(out_path, dpi=180)
-    plt.close(fig)
+    fig_style.save(fig, out_path)
     combined.insert(0, "variant_id", variant["variant_id"])
     combined.insert(1, "variant_type", variant["variant_type"])
     return combined
