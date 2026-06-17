@@ -4,6 +4,7 @@ Variant table: `data\experiment_3\clinvar_splicing_variants.csv`
 
 This run scores real ClinVar-labeled SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).
 External tools are executed through a Python 3.10 splice-tool environment and merged as real sequence-level variant scores.
+CNN AUROC/AUPRC in the 3A and 3B ranking tables report the multi-seed seed=42 values (`experiment_3_multiseed_metrics.csv`, `experiment_3_multiseed_distance_matched_metrics.csv`); RNA-FM/RNABERT and the external tools are deterministic single-run outputs. The "By Variant Type" and "Format-Control" tables below are single-run only (no multi-seed counterpart).
 
 ## Variant Set
 
@@ -19,7 +20,7 @@ External tools are executed through a Python 3.10 splice-tool environment and me
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.7532 |  0.7839 |      50 |          0.196 |              1.96 |        500 |
 | Pangolin real sequence model  | real_external_tool |  0.7023 |  0.7781 |      50 |          0.196 |              1.96 |        500 |
-| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.6959 |  0.7374 |      50 |          0.196 |              1.96 |        500 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7019 |  0.7404 |      50 |          0.196 |              1.96 |        500 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.6673 |  0.7326 |      50 |          0.196 |              1.96 |        500 |
 | SpliceAI real sequence model  | real_external_tool |  0.6425 |  0.7289 |      50 |          0.2   |              2    |        500 |
 | MaxEntScan real local score   | real_external_tool |  0.6165 |  0.6716 |      50 |          0.196 |              1.96 |        500 |
@@ -33,7 +34,7 @@ This diagnostic evaluates the same scores on an exact-distance-matched ClinVar s
 | RNA-FM frozen encoder + MLP   | trained_classifier |  0.6684 |  0.6559 |      33 |         0.135  |            1.3333 |        326 |
 | Pangolin real sequence model  | real_external_tool |  0.5902 |  0.6416 |      33 |         0.1595 |            1.5758 |        326 |
 | SpliceAI real sequence model  | real_external_tool |  0.5135 |  0.5693 |      33 |         0.135  |            1.3333 |        326 |
-| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.558  |  0.565  |      33 |         0.1104 |            1.0909 |        326 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.5645 |  0.5679 |      33 |         0.1104 |            1.0909 |        326 |
 | MaxEntScan real local score   | real_external_tool |  0.4668 |  0.5496 |      33 |         0.1288 |            1.2727 |        326 |
 | RNABERT frozen encoder + MLP  | trained_classifier |  0.5155 |  0.5442 |      33 |         0.1104 |            1.0909 |        326 |
 | MMSplice real sequence model  | real_external_tool |  0.5    |  0.5    |      33 |         0.092  |            0.9091 |        326 |

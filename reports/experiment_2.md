@@ -2,21 +2,22 @@
 
 This run uses only the implemented real-model set: CNN baseline, RNA-FM frozen encoder, and RNABERT frozen encoder.
 RNA-FM/RNABERT require local pretrained weights under `models/hf/`; the report contains only real-model rows.
+CNN rows in 2A/2B report the multi-seed seed=42 values (`experiment_2_multiseed_metrics.csv`, `experiment_2_multiseed_hard_negative_metrics.csv`); RNA-FM/RNABERT are deterministic. The rare-motif table below remains a single-run synthetic stress test with no multi-seed counterpart.
 
 ## 2A Multi-Scale Context
 
 |   window_flank |   sequence_length | model                         |   accuracy |   macro_f1 |   auroc |   auprc |   hard_negative_fpr |
 |---------------:|------------------:|:------------------------------|-----------:|-----------:|--------:|--------:|--------------------:|
-|             50 |               101 | CNN baseline (PyTorch Conv1D) |     0.8329 |     0.8336 |  0.9513 |  0.9106 |              0.3419 |
+|             50 |               101 | CNN baseline (PyTorch Conv1D) |     0.8306 |     0.8312 |  0.9513 |  0.9107 |              0.3484 |
 |             50 |               101 | RNA-FM frozen encoder + MLP   |     0.8005 |     0.8024 |  0.9158 |  0.8448 |              0.2774 |
 |             50 |               101 | RNABERT frozen encoder + MLP  |     0.8121 |     0.8136 |  0.9285 |  0.8644 |              0.3097 |
-|            100 |               201 | CNN baseline (PyTorch Conv1D) |     0.8121 |     0.8109 |  0.9471 |  0.9047 |              0.3871 |
+|            100 |               201 | CNN baseline (PyTorch Conv1D) |     0.8121 |     0.8109 |  0.9472 |  0.9051 |              0.3871 |
 |            100 |               201 | RNA-FM frozen encoder + MLP   |     0.761  |     0.7634 |  0.906  |  0.8126 |              0.3613 |
 |            100 |               201 | RNABERT frozen encoder + MLP  |     0.8306 |     0.8323 |  0.9392 |  0.8885 |              0.2903 |
-|            200 |               401 | CNN baseline (PyTorch Conv1D) |     0.8167 |     0.8169 |  0.9467 |  0.9045 |              0.3613 |
+|            200 |               401 | CNN baseline (PyTorch Conv1D) |     0.8190 |     0.8196 |  0.9464 |  0.9046 |              0.3548 |
 |            200 |               401 | RNA-FM frozen encoder + MLP   |     0.7842 |     0.7869 |  0.9181 |  0.8439 |              0.3097 |
 |            200 |               401 | RNABERT frozen encoder + MLP  |     0.8144 |     0.8149 |  0.9308 |  0.8733 |              0.329  |
-|            400 |               801 | CNN baseline (PyTorch Conv1D) |     0.819  |     0.8186 |  0.9466 |  0.9052 |              0.3742 |
+|            400 |               801 | CNN baseline (PyTorch Conv1D) |     0.8190 |     0.8186 |  0.9468 |  0.9055 |              0.3742 |
 |            400 |               801 | RNA-FM frozen encoder + MLP   |     0.7842 |     0.788  |  0.9095 |  0.8333 |              0.2903 |
 |            400 |               801 | RNABERT frozen encoder + MLP  |     0.8469 |     0.8477 |  0.9354 |  0.8815 |              0.2645 |
 
@@ -43,8 +44,8 @@ The rare-motif table is a synthetic stress test, not a claim about population-sc
 
 Outputs:
 
-- `results/experiment_2/tables/experiment_2A_multiscale_context.csv`
-- `results/experiment_2/tables/experiment_2B_hard_negative.csv`
+- `results/experiment_2/tables/experiment_2_multiseed_metrics.csv`
+- `results/experiment_2/tables/experiment_2_multiseed_hard_negative_metrics.csv`
 - `results/experiment_2/tables/experiment_2B_rare_motif.csv`
 - `results/experiment_2/figures/exp2A_context_macro_f1.png`
 - `results/experiment_2/figures/exp2A_context_auprc.png`

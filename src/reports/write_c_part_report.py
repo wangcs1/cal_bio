@@ -17,6 +17,18 @@ from src.utils import (
 )
 
 
+def load_seed_preferred(primary: Path, multiseed: Path | None = None, seed: int = 42) -> pd.DataFrame:
+    """Prefer the multi-seed table (selecting the given seed) so the report matches the
+    multi-seed summary; fall back to the single-run table only if multi-seed is absent."""
+    if multiseed is not None and multiseed.exists():
+        frame = pd.read_csv(multiseed)
+        if "seed" in frame.columns:
+            subset = frame[frame["seed"].astype(int) == seed].copy()
+            if not subset.empty:
+                return subset.drop(columns=["seed"], errors="ignore")
+    return load_or_empty(primary)
+
+
 def markdown_table(frame: pd.DataFrame, max_rows: int = 12) -> str:
     if frame.empty:
         return "_Not generated yet._"
@@ -36,9 +48,28 @@ def write_report(root: Path = PROJECT_ROOT) -> Path:
             split_counts.append({"split": split, "rows": len(frame)})
     split_frame = pd.DataFrame(split_counts)
 
-    exp1 = load_or_empty(EXP1_TABLES_DIR / "experiment_1_metrics.csv")
-    exp2 = load_or_empty(EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv")
-    exp3 = load_or_empty(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
+    exp1 = load_seed_preferred(
+        EXP1_TABLES_DIR / "experiment_1_metrics.csv",
+        EXP1_TABLES_DIR / "experiment_1_multiseed_metrics.csv",
+    )
+    exp2 = load_seed_preferred(
+        EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv",
+        EXP2_TABLES_DIR / "experiment_2_multiseed_hard_negative_metrics.csv",
+    )
+    # Trained-model rows come from the multi-seed table (seed 42); external-tool rows are
+    # deterministic single-run outputs that only exist in the single-run table.
+    exp3_full = load_or_empty(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
+    exp3_trained = load_seed_preferred(
+        EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv",
+        EXP3_TABLES_DIR / "experiment_3_multiseed_metrics.csv",
+    )
+    if "source" in exp3_full.columns and not exp3_full.empty:
+        external = exp3_full[exp3_full["source"] == "real_external_tool"].copy()
+        exp3 = pd.concat([exp3_trained, external], ignore_index=True, sort=False)
+        if "auroc" in exp3.columns:
+            exp3 = exp3.sort_values("auroc", ascending=False).reset_index(drop=True)
+    else:
+        exp3 = exp3_trained
     variants = load_or_empty(EXP3_DATA_DIR / "clinvar_splicing_variants_summary.csv")
 
     text = f"""# C Part Combined Report
