@@ -84,6 +84,16 @@ def save(fig: plt.Figure, path: Path) -> None:
     plt.close(fig)
 
 
+def load_seed_preferred_table(primary: Path, multiseed: Path | None = None, seed: int = 42) -> pd.DataFrame:
+    if multiseed is not None and multiseed.exists():
+        frame = pd.read_csv(multiseed)
+        if "seed" in frame.columns:
+            subset = frame[frame["seed"].astype(int) == seed].copy()
+            if not subset.empty:
+                return subset.drop(columns=["seed"], errors="ignore")
+    return pd.read_csv(primary)
+
+
 def add_value_labels(ax: plt.Axes, bars, values: pd.Series, fmt: str = "{:.3f}", pad: float = 0.004) -> None:
     x_max = ax.get_xlim()[1]
     for bar, value in zip(bars, values):
@@ -102,7 +112,10 @@ def add_value_labels(ax: plt.Axes, bars, values: pd.Series, fmt: str = "{:.3f}",
 
 
 def plot_exp1_macro_f1(out_dir: Path) -> None:
-    metrics = pd.read_csv(EXP1_TABLES_DIR / "experiment_1_metrics.csv").sort_values("macro_f1")
+    metrics = load_seed_preferred_table(
+        EXP1_TABLES_DIR / "experiment_1_metrics.csv",
+        EXP1_TABLES_DIR / "experiment_1_multiseed_metrics.csv",
+    ).sort_values("macro_f1")
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
     style_axes(ax)
     labels = [short_model(model) for model in metrics["model"]]
@@ -129,7 +142,10 @@ def plot_exp1_macro_f1(out_dir: Path) -> None:
 
 
 def plot_exp2_context(out_dir: Path) -> None:
-    metrics = pd.read_csv(EXP2_TABLES_DIR / "experiment_2A_multiscale_context.csv")
+    metrics = load_seed_preferred_table(
+        EXP2_TABLES_DIR / "experiment_2A_multiscale_context.csv",
+        EXP2_TABLES_DIR / "experiment_2_multiseed_metrics.csv",
+    )
     for metric, filename, ylabel in [
         ("macro_f1", "exp2A_context_macro_f1.png", "Macro-F1"),
         ("auprc", "exp2A_context_auprc.png", "Macro AUPRC"),
@@ -181,7 +197,10 @@ def plot_exp2_context(out_dir: Path) -> None:
 
 
 def plot_exp2_hard_negative(out_dir: Path) -> None:
-    hard = pd.read_csv(EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv").sort_values("hard_negative_fpr")
+    hard = load_seed_preferred_table(
+        EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv",
+        EXP2_TABLES_DIR / "experiment_2_multiseed_hard_negative_metrics.csv",
+    ).sort_values("hard_negative_fpr")
     fig, ax = plt.subplots(figsize=(8.4, 4.7))
     style_axes(ax)
     labels = [short_model(model) for model in hard["model"]]
@@ -225,7 +244,16 @@ def plot_exp2_hard_negative(out_dir: Path) -> None:
 
 
 def plot_exp3_metrics(out_dir: Path) -> None:
-    metrics = pd.read_csv(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
+    base_metrics = pd.read_csv(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
+    seeded_metrics = load_seed_preferred_table(
+        EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv",
+        EXP3_TABLES_DIR / "experiment_3_multiseed_metrics.csv",
+    )
+    if "source" in base_metrics.columns:
+        external = base_metrics[base_metrics["source"] == "real_external_tool"].copy()
+        metrics = pd.concat([seeded_metrics, external], ignore_index=True, sort=False)
+    else:
+        metrics = seeded_metrics
     for metric, filename, label in [
         ("auroc", "exp3_variant_auroc.png", "AUROC"),
         ("auprc", "exp3_variant_auprc.png", "AUPRC"),
