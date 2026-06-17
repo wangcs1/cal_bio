@@ -7,26 +7,26 @@ RNA-FM/RNABERT require local pretrained weights under `models/hf/`; the report c
 
 |   window_flank |   sequence_length | model                         |   accuracy |   macro_f1 |   auroc |   auprc |   hard_negative_fpr |
 |---------------:|------------------:|:------------------------------|-----------:|-----------:|--------:|--------:|--------------------:|
-|             50 |               101 | CNN baseline (PyTorch Conv1D) |     0.9719 |     0.9719 |  1      |  1      |              0.1194 |
-|             50 |               101 | RNA-FM frozen encoder + MLP   |     0.986  |     0.9863 |  0.9985 |  0.9973 |              0.0299 |
-|             50 |               101 | RNABERT frozen encoder + MLP  |     0.9965 |     0.9966 |  1      |  1      |              0      |
-|            100 |               201 | CNN baseline (PyTorch Conv1D) |     0.9263 |     0.9258 |  1      |  1      |              0.3134 |
-|            100 |               201 | RNA-FM frozen encoder + MLP   |     0.9649 |     0.9655 |  0.9974 |  0.9952 |              0.0746 |
-|            100 |               201 | RNABERT frozen encoder + MLP  |     0.9965 |     0.9966 |  0.9999 |  0.9999 |              0.0149 |
-|            200 |               401 | CNN baseline (PyTorch Conv1D) |     0.8842 |     0.8821 |  0.9994 |  0.9988 |              0.4925 |
-|            200 |               401 | RNA-FM frozen encoder + MLP   |     0.9719 |     0.9726 |  0.9968 |  0.994  |              0.0746 |
-|            200 |               401 | RNABERT frozen encoder + MLP  |     0.9895 |     0.9896 |  0.9999 |  0.9998 |              0.0299 |
-|            400 |               801 | CNN baseline (PyTorch Conv1D) |     0.8842 |     0.8821 |  0.9568 |  0.9095 |              0.4925 |
-|            400 |               801 | RNA-FM frozen encoder + MLP   |     0.9579 |     0.9586 |  0.9953 |  0.9913 |              0.0746 |
-|            400 |               801 | RNABERT frozen encoder + MLP  |     1      |     1      |  1      |  1      |              0      |
+|             50 |               101 | CNN baseline (PyTorch Conv1D) |     0.8329 |     0.8336 |  0.9513 |  0.9106 |              0.3419 |
+|             50 |               101 | RNA-FM frozen encoder + MLP   |     0.8005 |     0.8024 |  0.9158 |  0.8448 |              0.2774 |
+|             50 |               101 | RNABERT frozen encoder + MLP  |     0.8121 |     0.8136 |  0.9285 |  0.8644 |              0.3097 |
+|            100 |               201 | CNN baseline (PyTorch Conv1D) |     0.8121 |     0.8109 |  0.9471 |  0.9047 |              0.3871 |
+|            100 |               201 | RNA-FM frozen encoder + MLP   |     0.761  |     0.7634 |  0.906  |  0.8126 |              0.3613 |
+|            100 |               201 | RNABERT frozen encoder + MLP  |     0.8306 |     0.8323 |  0.9392 |  0.8885 |              0.2903 |
+|            200 |               401 | CNN baseline (PyTorch Conv1D) |     0.8167 |     0.8169 |  0.9467 |  0.9045 |              0.3613 |
+|            200 |               401 | RNA-FM frozen encoder + MLP   |     0.7842 |     0.7869 |  0.9181 |  0.8439 |              0.3097 |
+|            200 |               401 | RNABERT frozen encoder + MLP  |     0.8144 |     0.8149 |  0.9308 |  0.8733 |              0.329  |
+|            400 |               801 | CNN baseline (PyTorch Conv1D) |     0.819  |     0.8186 |  0.9466 |  0.9052 |              0.3742 |
+|            400 |               801 | RNA-FM frozen encoder + MLP   |     0.7842 |     0.788  |  0.9095 |  0.8333 |              0.2903 |
+|            400 |               801 | RNABERT frozen encoder + MLP  |     0.8469 |     0.8477 |  0.9354 |  0.8815 |              0.2645 |
 
 ## 2B Hard-Negative Stress Test
 
 | model                         |   test_easy_macro_f1 |   test_hard_macro_f1 |   cross_gene_macro_f1 |   hard_negative_fpr |   hard_negative_false_positives |   hard_negative_rows |
 |:------------------------------|---------------------:|---------------------:|----------------------:|--------------------:|--------------------------------:|---------------------:|
-| CNN baseline (PyTorch Conv1D) |               1      |               0.839  |                0.8821 |              0.4925 |                              33 |                   67 |
-| RNA-FM frozen encoder + MLP   |               0.9802 |               0.9659 |                0.9726 |              0.0746 |                               5 |                   67 |
-| RNABERT frozen encoder + MLP  |               0.9932 |               0.9871 |                0.9896 |              0.0299 |                               2 |                   67 |
+| CNN baseline (PyTorch Conv1D) |               0.6334 |               0.8193 |                0.8193 |              0.3548 |                              55 |                  155 |
+| RNA-FM frozen encoder + MLP   |               0.6064 |               0.7869 |                0.7869 |              0.3097 |                              48 |                  155 |
+| RNABERT frozen encoder + MLP  |               0.6264 |               0.8149 |                0.8149 |              0.329  |                              51 |                  155 |
 
 ## Rare Motif Stress Test
 
@@ -34,12 +34,12 @@ The rare-motif table is a synthetic stress test, not a claim about population-sc
 
 | model                         | motif_type          |   rows |   mean_target_probability |   accuracy |   macro_f1 |
 |:------------------------------|:--------------------|-------:|--------------------------:|-----------:|-----------:|
-| CNN baseline (PyTorch Conv1D) | rare_AT-AC_acceptor |     40 |                    0.3587 |      0.05  |     0.0476 |
-| CNN baseline (PyTorch Conv1D) | rare_GC-AG_donor    |     40 |                    0.9153 |      1     |     1      |
-| RNA-FM frozen encoder + MLP   | rare_AT-AC_acceptor |     40 |                    0.9711 |      1     |     1      |
-| RNA-FM frozen encoder + MLP   | rare_GC-AG_donor    |     40 |                    0.7211 |      0.775 |     0.4366 |
-| RNABERT frozen encoder + MLP  | rare_AT-AC_acceptor |     40 |                    0.9359 |      0.975 |     0.4937 |
-| RNABERT frozen encoder + MLP  | rare_GC-AG_donor    |     40 |                    0.5851 |      0.55  |     0.3548 |
+| CNN baseline (PyTorch Conv1D) | rare_AT-AC_acceptor |     40 |                    0.1839 |      0.1   |     0.0909 |
+| CNN baseline (PyTorch Conv1D) | rare_GC-AG_donor    |     40 |                    0.991  |      1     |     1      |
+| RNA-FM frozen encoder + MLP   | rare_AT-AC_acceptor |     40 |                    0.1288 |      0.1   |     0.0606 |
+| RNA-FM frozen encoder + MLP   | rare_GC-AG_donor    |     40 |                    0.3003 |      0.25  |     0.2    |
+| RNABERT frozen encoder + MLP  | rare_AT-AC_acceptor |     40 |                    0.114  |      0.025 |     0.0163 |
+| RNABERT frozen encoder + MLP  | rare_GC-AG_donor    |     40 |                    0.6402 |      0.725 |     0.4203 |
 
 Outputs:
 

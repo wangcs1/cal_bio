@@ -1,29 +1,29 @@
 model,fraction,k,positive_count,precision,recall,enrichment
-CNN baseline (PyTorch Conv1D),0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-CNN baseline (PyTorch Conv1D),0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-CNN baseline (PyTorch Conv1D),0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-CNN baseline (PyTorch Conv1D),0.2,92,92,1.0,0.32857142857142857,1.6428571428571428
-MMSplice real sequence model,0.02,10,5,0.5,0.017857142857142856,0.8214285714285714
-MMSplice real sequence model,0.05,23,11,0.4782608695652174,0.039285714285714285,0.7857142857142857
-MMSplice real sequence model,0.1,46,27,0.5869565217391305,0.09642857142857143,0.9642857142857143
-MMSplice real sequence model,0.2,92,60,0.6521739130434783,0.21428571428571427,1.0714285714285714
-MaxEntScan real local score,0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-MaxEntScan real local score,0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-MaxEntScan real local score,0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-MaxEntScan real local score,0.2,92,92,1.0,0.32857142857142857,1.6428571428571428
-Pangolin real sequence model,0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-Pangolin real sequence model,0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-Pangolin real sequence model,0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-Pangolin real sequence model,0.2,92,92,1.0,0.32857142857142857,1.6428571428571428
-RNA-FM frozen encoder + MLP,0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-RNA-FM frozen encoder + MLP,0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-RNA-FM frozen encoder + MLP,0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-RNA-FM frozen encoder + MLP,0.2,92,86,0.9347826086956522,0.30714285714285716,1.5357142857142856
-RNABERT frozen encoder + MLP,0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-RNABERT frozen encoder + MLP,0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-RNABERT frozen encoder + MLP,0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-RNABERT frozen encoder + MLP,0.2,92,92,1.0,0.32857142857142857,1.6428571428571428
-SpliceAI real sequence model,0.02,10,10,1.0,0.03571428571428571,1.6428571428571428
-SpliceAI real sequence model,0.05,23,23,1.0,0.08214285714285714,1.6428571428571428
-SpliceAI real sequence model,0.1,46,46,1.0,0.16428571428571428,1.6428571428571428
-SpliceAI real sequence model,0.2,92,92,1.0,0.32857142857142857,1.6428571428571428
+CNN baseline (PyTorch Conv1D),0.02,10,10,1.0,0.04,2.0
+CNN baseline (PyTorch Conv1D),0.05,25,25,1.0,0.1,2.0
+CNN baseline (PyTorch Conv1D),0.1,50,49,0.98,0.196,1.96
+CNN baseline (PyTorch Conv1D),0.2,100,81,0.81,0.324,1.62
+MMSplice real sequence model,0.02,10,3,0.3,0.012,0.6
+MMSplice real sequence model,0.05,25,10,0.4,0.04,0.8
+MMSplice real sequence model,0.1,50,19,0.38,0.076,0.76
+MMSplice real sequence model,0.2,100,40,0.4,0.16,0.8
+MaxEntScan real local score,0.02,10,10,1.0,0.04,2.0
+MaxEntScan real local score,0.05,25,25,1.0,0.1,2.0
+MaxEntScan real local score,0.1,50,49,0.98,0.196,1.96
+MaxEntScan real local score,0.2,100,87,0.87,0.348,1.74
+Pangolin real sequence model,0.02,10,10,1.0,0.04,2.0
+Pangolin real sequence model,0.05,25,24,0.96,0.096,1.92
+Pangolin real sequence model,0.1,50,49,0.98,0.196,1.96
+Pangolin real sequence model,0.2,100,92,0.92,0.368,1.84
+RNA-FM frozen encoder + MLP,0.02,10,10,1.0,0.04,2.0
+RNA-FM frozen encoder + MLP,0.05,25,25,1.0,0.1,2.0
+RNA-FM frozen encoder + MLP,0.1,50,49,0.98,0.196,1.96
+RNA-FM frozen encoder + MLP,0.2,100,86,0.86,0.344,1.72
+RNABERT frozen encoder + MLP,0.02,10,9,0.9,0.036,1.8
+RNABERT frozen encoder + MLP,0.05,25,24,0.96,0.096,1.92
+RNABERT frozen encoder + MLP,0.1,50,49,0.98,0.196,1.96
+RNABERT frozen encoder + MLP,0.2,100,88,0.88,0.352,1.76
+SpliceAI real sequence model,0.02,10,10,1.0,0.04,2.0
+SpliceAI real sequence model,0.05,25,25,1.0,0.1,2.0
+SpliceAI real sequence model,0.1,50,50,1.0,0.2,2.0
+SpliceAI real sequence model,0.2,100,87,0.87,0.348,1.74

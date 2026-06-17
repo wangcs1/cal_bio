@@ -29,9 +29,9 @@ def main() -> None:
         report_path=PROJECT_ROOT / "reports/experiment_1.md",
         model_keys=["cnn", "rnafm", "rnabert"],
         seed=42,
-        max_train_rows=855,
-        max_valid_rows=120,
-        max_test_rows=285,
+        max_train_rows=None,
+        max_valid_rows=None,
+        max_test_rows=None,
     )
     print("[3/9] Running experiment 2")
     run_exp2(EXP2_TABLES_DIR, EXP2_FIGURES_DIR, random_state=42)

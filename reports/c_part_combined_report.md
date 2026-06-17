@@ -1,32 +1,30 @@
 # C Part Combined Report
 
-Generated: 2026-06-17 02:17:40
+Generated: 2026-06-17 13:32:50
 
 ## Scope
 
 The main C Part pipeline uses the current small split, not a million-scale full dataset.
-Default split size is train/valid/test = 855/120/285 when the synthetic builder is run with
-the repository defaults. This run reports real-model rows only. Experiments 1 and 2 use
-CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
+Experiments 1 and 2 use a real GENCODE/GRCh38 chromosome-holdout split with balanced
+donor/acceptor/non-splice classes. This run reports real-model rows only. Experiments 1
+and 2 use CNN, RNA-FM frozen encoder, and RNABERT frozen encoder. Experiment 3 additionally
 includes real external splice tools: SpliceAI, Pangolin, MMSplice, and MaxEntScan.
 
 ## Data
 
 | split   |   rows |
 |:--------|-------:|
-| train   |    855 |
-| valid   |    120 |
-| test    |    285 |
+| train   |   2339 |
+| valid   |    230 |
+| test    |    431 |
 
-Artificial variant summary:
+Real ClinVar variant summary:
 
-| variant_type    | label_name      |   rows |
-|:----------------|:----------------|-------:|
-| acceptor_gain   | splice_altering |     55 |
-| acceptor_loss   | splice_altering |     90 |
-| donor_gain      | splice_altering |     45 |
-| donor_loss      | splice_altering |     90 |
-| neutral_far_snv | neutral         |    180 |
+| variant_type            | label_name      |   rows |
+|:------------------------|:----------------|-------:|
+| acceptor_clinvar_splice | splice_altering |    141 |
+| clinvar_benign_snv      | neutral         |    250 |
+| donor_clinvar_splice    | splice_altering |    109 |
 
 ## Experiment 1
 
@@ -34,9 +32,9 @@ Splice-site donor/acceptor/non-splice classification with the real-model rows on
 
 | model_key   | model                         | model_type     | backend                   | split   |   rows |   accuracy |   macro_precision |   macro_recall |   macro_f1 |   auroc |   auprc |   donor_f1 |   acceptor_f1 |   non_splice_f1 |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |
 |:------------|:------------------------------|:---------------|:--------------------------|:--------|-------:|-----------:|------------------:|---------------:|-----------:|--------:|--------:|-----------:|--------------:|----------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|
-| cnn         | CNN baseline (PyTorch Conv1D) | baseline       | pytorch_conv1d            | test    |    285 |     0.8877 |            0.9111 |         0.8933 |     0.8858 |  0.9914 |  0.9825 |     0.9948 |        0.8531 |          0.8095 |              0.4776 |                   67 |                    67 |                              32 | label == 2 and negative_type contains 'hard' |
-| rnafm       | RNA-FM frozen encoder + MLP   | frozen encoder | local_pretrained_required | test    |    285 |     0.9509 |            0.9516 |         0.9526 |     0.9517 |  0.9936 |  0.9883 |     0.9381 |        0.989  |          0.9278 |              0.1493 |                   67 |                    67 |                              10 | label == 2 and negative_type contains 'hard' |
-| rnabert     | RNABERT frozen encoder + MLP  | frozen encoder | local_pretrained_required | test    |    285 |     0.993  |            0.9932 |         0.993  |     0.9931 |  0.9999 |  0.9998 |     0.9948 |        0.9944 |          0.99   |              0.0149 |                   67 |                    67 |                               1 | label == 2 and negative_type contains 'hard' |
+| cnn         | CNN baseline (PyTorch Conv1D) | baseline       | pytorch_conv1d            | test    |    431 |     0.819  |            0.82   |         0.8261 |     0.8206 |  0.9488 |  0.9072 |     0.8989 |        0.8312 |          0.7317 |              0.3226 |                  155 |                   155 |                              50 | label == 2 and negative_type contains 'hard' |
+| rnafm       | RNA-FM frozen encoder + MLP   | frozen encoder | local_pretrained_required | test    |    431 |     0.7633 |            0.7664 |         0.7677 |     0.767  |  0.9157 |  0.8402 |     0.8168 |        0.811  |          0.6731 |              0.329  |                  155 |                   155 |                              51 | label == 2 and negative_type contains 'hard' |
+| rnabert     | RNABERT frozen encoder + MLP  | frozen encoder | local_pretrained_required | test    |    431 |     0.819  |            0.8196 |         0.8261 |     0.8199 |  0.9298 |  0.8718 |     0.8889 |        0.8339 |          0.7368 |              0.3226 |                  155 |                   155 |                              50 | label == 2 and negative_type contains 'hard' |
 
 ## Experiment 2
 
@@ -45,25 +43,25 @@ set.
 
 | model                         |   test_easy_macro_f1 |   test_easy_auprc |   test_hard_macro_f1 |   test_hard_auprc |   cross_gene_macro_f1 |   cross_gene_auprc |   hard_negative_fpr |   hard_negative_rows |   hard_negative_count |   hard_negative_false_positives | hard_negative_filter                         |   test_easy_rows |   test_hard_rows |   cross_gene_rows |
 |:------------------------------|---------------------:|------------------:|---------------------:|------------------:|----------------------:|-------------------:|--------------------:|---------------------:|----------------------:|--------------------------------:|:---------------------------------------------|-----------------:|-----------------:|------------------:|
-| CNN baseline (PyTorch Conv1D) |               1      |            1      |               0.839  |            0.9983 |                0.8821 |             0.9987 |              0.4925 |                   67 |                    67 |                              33 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
-| RNA-FM frozen encoder + MLP   |               0.9802 |            0.9987 |               0.9659 |            0.9911 |                0.9726 |             0.994  |              0.0746 |                   67 |                    67 |                               5 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
-| RNABERT frozen encoder + MLP  |               0.9932 |            0.9997 |               0.9871 |            0.9997 |                0.9896 |             0.9998 |              0.0299 |                   67 |                    67 |                               2 | label == 2 and negative_type contains 'hard' |              218 |              252 |               285 |
+| CNN baseline (PyTorch Conv1D) |               0.6334 |            0.6651 |               0.8193 |            0.9047 |                0.8193 |             0.9047 |              0.3548 |                  155 |                   155 |                              55 | label == 2 and negative_type contains 'hard' |              276 |              431 |               431 |
+| RNA-FM frozen encoder + MLP   |               0.6064 |            0.6639 |               0.7869 |            0.8439 |                0.7869 |             0.8439 |              0.3097 |                  155 |                   155 |                              48 | label == 2 and negative_type contains 'hard' |              276 |              431 |               431 |
+| RNABERT frozen encoder + MLP  |               0.6264 |            0.6635 |               0.8149 |            0.8733 |                0.8149 |             0.8733 |              0.329  |                  155 |                   155 |                              51 | label == 2 and negative_type contains 'hard' |              276 |              431 |               431 |
 
 ## Experiment 3
 
-Artificial variant effect prediction plus small ClinVar/sQTL-format smoke inputs. The
-main artificial-variant table includes both trained project models and real external
-splice-tool rows.
+Real ClinVar variant effect prediction plus small format-control case studies. The
+main variant table includes both trained project models and real external splice tools;
+all reported rows use real local models or real external tool outputs.
 
 | model                         | source             |   auroc |   auprc |   top_k |   top_k_recall |   enrichment_at_k |   variants |
 |:------------------------------|:-------------------|--------:|--------:|--------:|---------------:|------------------:|-----------:|
-| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7137 |  0.8693 |      46 |         0.1643 |            1.6429 |        460 |
-| RNABERT frozen encoder + MLP  | trained_classifier |  0.6828 |  0.8503 |      46 |         0.1643 |            1.6429 |        460 |
-| Pangolin real sequence model  | real_external_tool |  0.6853 |  0.8368 |      46 |         0.1643 |            1.6429 |        460 |
-| SpliceAI real sequence model  | real_external_tool |  0.6392 |  0.8271 |      46 |         0.1643 |            1.6429 |        460 |
-| MaxEntScan real local score   | real_external_tool |  0.7268 |  0.789  |      46 |         0.1643 |            1.6429 |        460 |
-| RNA-FM frozen encoder + MLP   | trained_classifier |  0.5962 |  0.7695 |      46 |         0.1643 |            1.6429 |        460 |
-| MMSplice real sequence model  | real_external_tool |  0.6667 |  0.7    |      46 |         0.0964 |            0.9643 |        460 |
+| RNA-FM frozen encoder + MLP   | trained_classifier |  0.7532 |  0.7839 |      50 |          0.196 |              1.96 |        500 |
+| Pangolin real sequence model  | real_external_tool |  0.7023 |  0.7781 |      50 |          0.196 |              1.96 |        500 |
+| CNN baseline (PyTorch Conv1D) | trained_classifier |  0.7018 |  0.7399 |      50 |          0.196 |              1.96 |        500 |
+| RNABERT frozen encoder + MLP  | trained_classifier |  0.6673 |  0.7326 |      50 |          0.196 |              1.96 |        500 |
+| SpliceAI real sequence model  | real_external_tool |  0.6425 |  0.7289 |      50 |          0.2   |              2    |        500 |
+| MaxEntScan real local score   | real_external_tool |  0.6165 |  0.6716 |      50 |          0.196 |              1.96 |        500 |
+| MMSplice real sequence model  | real_external_tool |  0.5    |  0.5    |      50 |          0.076 |              0.76 |        500 |
 
 ## Reports
 

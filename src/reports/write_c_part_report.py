@@ -78,7 +78,7 @@ set.
 
 Real ClinVar variant effect prediction plus small format-control case studies. The
 main variant table includes both trained project models and real external splice tools;
-no proxy/fallback rows are reported.
+all reported rows use real local models or real external tool outputs.
 
 {markdown_table(exp3)}
 

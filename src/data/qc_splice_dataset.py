@@ -590,7 +590,12 @@ def build_qc_report(
         "",
         "Exact-distance matching summary:",
         "",
-        _markdown(clinvar_distance_bins[clinvar_distance_bins["matched_pairs"] > 0], max_rows=60),
+        _markdown(
+            clinvar_distance_bins[clinvar_distance_bins["matched_pairs"] > 0]
+            if "matched_pairs" in clinvar_distance_bins.columns
+            else clinvar_distance_bins,
+            max_rows=60,
+        ),
         "",
         f"Distance-matched ClinVar subset: `{EXP3_DATA_DIR / 'clinvar_splicing_variants_distance_matched.csv'}`.",
         "",
@@ -626,7 +631,7 @@ def build_qc_report(
         "",
         "## 9. 跨实验一致性",
         "",
-        "Experiment 1/2 split uses GRCh38 + GENCODE v50 and chromosome holdout. Experiment 3 ClinVar windows use the same genome/annotation coordinate system and are restricted to held-out test chromosomes.",
+        "Experiment 1/2 split uses the local GRCh38 + GENCODE annotation and chromosome holdout. Experiment 3 ClinVar windows use the same genome/annotation coordinate system and are restricted to held-out test chromosomes.",
         "",
     ]
     output.parent.mkdir(parents=True, exist_ok=True)

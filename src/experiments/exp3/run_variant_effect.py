@@ -74,7 +74,7 @@ def write_report(
         f"Variant table: `{variant_path}`",
         "",
         "This run scores real ClinVar-labeled SNVs with real local models only. It includes the trained project models (CNN, RNA-FM frozen encoder, RNABERT frozen encoder) and external real splice tools (SpliceAI, Pangolin, MMSplice, MaxEntScan).",
-        "External tools are not fallback/proxy rows; they are executed through a Python 3.10 splice-tool environment and merged as sequence-level variant scores.",
+        "External tools are executed through a Python 3.10 splice-tool environment and merged as real sequence-level variant scores.",
         "",
         "## Variant Set",
         "",
@@ -94,15 +94,15 @@ def write_report(
         "",
         markdown_table(variant_summary, ["model", "source", "variant_type", "mean_score", "median_score", "rows", "positive_rate"]),
         "",
-        "## Smoke Inputs",
+        "## Format-Control Inputs",
         "",
-        "The ClinVar smoke table is a small real-data subset for plumbing checks. The sQTL table is a format-control case study unless a real GTEx table is supplied.",
+        "The additional ClinVar subset and sQTL-style table are format-control checks, not main benchmark evidence.",
         "",
-        "ClinVar-format smoke metrics:",
+        "ClinVar subset metrics:",
         "",
         markdown_table(clinvar, ["model", "auroc", "auprc", "variants"]),
         "",
-        f"sQTL-format rows: {len(sqtl)}",
+        f"sQTL-style rows: {len(sqtl)}",
         "",
         "Outputs:",
         "",
@@ -331,6 +331,9 @@ def plot_variant_type_summary(summary: pd.DataFrame, out_dir: Path) -> None:
         "donor_gain": "Donor gain",
         "acceptor_gain": "Acceptor gain",
         "neutral_far_snv": "Neutral far SNV",
+        "donor_clinvar_splice": "ClinVar donor splice",
+        "acceptor_clinvar_splice": "ClinVar acceptor splice",
+        "clinvar_benign_snv": "ClinVar benign SNV",
     }
     pivot = (
         summary.pivot_table(index="variant_type", columns="model", values="mean_score", aggfunc="mean")
@@ -410,7 +413,7 @@ def plot_variant_type_summary(summary: pd.DataFrame, out_dir: Path) -> None:
     ax_bar.text(
         0.01,
         0.93,
-        "Bars compare absolute mean delta scores across perturbation classes.",
+        "Bars compare mean delta scores across ClinVar target/label classes.",
         transform=ax_bar.transAxes,
         ha="left",
         va="top",
@@ -505,7 +508,7 @@ def plot_calibration(scores: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     return bins
 
 
-def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
+def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path, auprc_baseline: float = 0.5) -> None:
     colors = {
         "CNN baseline (PyTorch Conv1D)": "#4C78A8",
         "RNA-FM frozen encoder + MLP": "#F58518",
@@ -535,11 +538,10 @@ def plot_metric_bars(metrics: pd.DataFrame, out_dir: Path) -> None:
         labels = [short_names.get(model, model) for model in order["model"]]
         bars = ax.barh(labels, order[metric], color=[colors.get(model, "#4C78A8") for model in order["model"]], edgecolor="#2f2a24", linewidth=0.45)
         ax.set_xlabel(label)
-        ax.set_title(f"Experiment 3 artificial variant effect {label}", fontsize=13, fontweight="bold", loc="left")
+        ax.set_title(f"Experiment 3 real ClinVar variant effect {label}", fontsize=13, fontweight="bold", loc="left")
         ax.set_xlim(0.0, 1.03)
         if metric == "auprc":
-            base_rate = 280 / 460
-            ax.axvline(base_rate, color="#E45756", linestyle="--", linewidth=1.4, label=f"Random baseline = {base_rate:.3f}")
+            ax.axvline(auprc_baseline, color="#E45756", linestyle="--", linewidth=1.4, label=f"Random baseline = {auprc_baseline:.3f}")
             ax.legend(frameon=True, fontsize=8, loc="lower right")
         elif metric == "auroc":
             ax.axvline(0.5, color="#E45756", linestyle="--", linewidth=1.4, label="Random baseline = 0.500")
@@ -692,7 +694,7 @@ def run(
     write_dataframe(output_tables / "experiment_3A_topk_enrichment_curve.csv", topk)
     write_dataframe(output_tables / "variant_effect_stratified_by_type.csv", variant_summary)
     write_dataframe(output_tables / "experiment_3A_calibration_bins.csv", calibration)
-    plot_metric_bars(metrics, output_figures)
+    plot_metric_bars(metrics, output_figures, auprc_baseline=float(variants["label"].astype(int).mean()))
     plot_delta_boxplot(scores, output_figures)
     plot_variant_type_summary(variant_summary, output_figures)
     run_saturation(models, output_tables, output_figures)

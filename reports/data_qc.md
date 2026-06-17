@@ -93,17 +93,17 @@ Donor GT and acceptor AG rates are 1.0 after transcript-oriented extraction, whi
 
 | label_name      | variant_type            | target_class_name   |   rows |
 |:----------------|:------------------------|:--------------------|-------:|
-| neutral         | clinvar_benign_snv      | acceptor            |    125 |
-| neutral         | clinvar_benign_snv      | donor               |    125 |
-| splice_altering | acceptor_clinvar_splice | acceptor            |    140 |
-| splice_altering | donor_clinvar_splice    | donor               |    110 |
+| neutral         | clinvar_benign_snv      | acceptor            |    124 |
+| neutral         | clinvar_benign_snv      | donor               |    126 |
+| splice_altering | acceptor_clinvar_splice | acceptor            |    141 |
+| splice_altering | donor_clinvar_splice    | donor               |    109 |
 
 ClinVar distance to nearest annotated splice site:
 
 | label_name      |   count |   mean |     std |   min |   25% |   50% |   75% |   max |
 |:----------------|--------:|-------:|--------:|------:|------:|------:|------:|------:|
-| neutral         |     250 | 19.388 | 13.2328 |     0 |  8.25 |  17   | 28    |    50 |
-| splice_altering |     250 | 14.348 | 14.3699 |     0 |  2    |   9.5 | 23.75 |    50 |
+| neutral         |     250 | 20.34  | 13.9948 |     0 |     9 |  17   |    29 |    50 |
+| splice_altering |     250 | 14.412 | 14.5075 |     0 |     2 |   9.5 |    24 |    50 |
 
 Distance confounding diagnostic:
 
@@ -111,65 +111,73 @@ The pathogenic/splice-altering variants are closer to annotated splice sites tha
 
 | subset                 |   rows |   positive_rows |   neutral_rows |   distance_only_auroc |   distance_only_auprc |
 |:-----------------------|-------:|----------------:|---------------:|----------------------:|----------------------:|
-| full_clinvar           |    500 |             250 |            250 |                0.6371 |                0.6838 |
-| exact_distance_matched |    318 |             159 |            159 |                0.5    |                0.5    |
+| full_clinvar           |    500 |             250 |            250 |                0.6475 |                0.6917 |
+| exact_distance_matched |    326 |             163 |            163 |                0.5    |                0.5    |
 
 Exact-distance matching summary:
 
 |   nearest_splice_distance |   positive_rows |   neutral_rows |   matched_pairs |
 |--------------------------:|----------------:|---------------:|----------------:|
-|                         0 |               1 |              2 |               1 |
-|                         1 |              57 |              5 |               5 |
-|                         2 |              26 |              5 |               5 |
-|                         3 |               8 |              8 |               8 |
-|                         4 |               3 |              9 |               3 |
-|                         5 |               5 |              7 |               5 |
+|                         0 |               3 |              3 |               3 |
+|                         1 |              56 |              3 |               3 |
+|                         2 |              27 |              5 |               5 |
+|                         3 |               8 |              9 |               8 |
+|                         4 |               3 |              8 |               3 |
+|                         5 |               5 |              6 |               5 |
 |                         6 |               8 |              8 |               8 |
-|                         7 |               9 |             14 |               9 |
-|                         8 |               2 |              5 |               2 |
-|                         9 |               6 |              9 |               6 |
+|                         7 |               7 |             12 |               7 |
+|                         8 |               1 |              8 |               1 |
+|                         9 |               7 |             11 |               7 |
 |                        10 |               6 |              6 |               6 |
 |                        11 |               4 |              9 |               4 |
 |                        12 |               6 |              6 |               6 |
-|                        13 |               6 |              6 |               6 |
-|                        14 |               5 |              8 |               5 |
-|                        15 |               3 |              5 |               3 |
-|                        16 |               4 |             11 |               4 |
-|                        17 |               5 |              9 |               5 |
+|                        13 |               6 |              5 |               5 |
+|                        14 |               5 |              7 |               5 |
+|                        15 |               3 |              4 |               3 |
+|                        16 |               4 |              8 |               4 |
+|                        17 |               4 |              9 |               4 |
 |                        18 |               2 |              6 |               2 |
 |                        19 |               6 |              4 |               4 |
-|                        20 |               6 |             13 |               6 |
+|                        20 |               5 |             11 |               5 |
 |                        21 |               4 |              3 |               3 |
-|                        22 |               2 |              4 |               2 |
-|                        23 |               3 |              5 |               3 |
-|                        24 |               4 |              3 |               3 |
-|                        25 |               1 |              7 |               1 |
+|                        22 |               3 |              4 |               3 |
+|                        23 |               3 |              4 |               3 |
+|                        24 |               4 |              4 |               4 |
+|                        25 |               1 |              6 |               1 |
 |                        26 |               2 |              2 |               2 |
-|                        27 |               3 |              4 |               3 |
-|                        28 |               6 |              7 |               6 |
-|                        29 |               4 |              6 |               4 |
-|                        31 |               3 |              5 |               3 |
-|                        32 |               2 |              5 |               2 |
+|                        27 |               2 |              4 |               2 |
+|                        28 |               6 |              6 |               6 |
+|                        29 |               4 |              7 |               4 |
+|                        31 |               3 |              4 |               3 |
+|                        32 |               2 |              3 |               2 |
+|                        33 |               1 |              3 |               1 |
 |                        34 |               3 |              2 |               2 |
-|                        35 |               2 |              5 |               2 |
+|                        35 |               3 |              5 |               3 |
 |                        37 |               1 |              1 |               1 |
-|                        38 |               2 |              1 |               1 |
+|                        38 |               3 |              3 |               3 |
 |                        40 |               3 |              5 |               3 |
 |                        42 |               3 |              5 |               3 |
-|                        43 |               3 |              4 |               3 |
+|                        43 |               3 |              5 |               3 |
 |                        44 |               1 |              3 |               1 |
+|                        45 |               2 |              2 |               2 |
 |                        46 |               3 |              4 |               3 |
-|                        48 |               3 |              2 |               2 |
-|                        49 |               4 |              2 |               2 |
+|                        48 |               3 |              3 |               3 |
+|                        49 |               4 |              3 |               3 |
 |                        50 |               1 |              1 |               1 |
 
-Distance-matched ClinVar subset: `/home/hunter/Projects/cal_bio/data/experiment_3/clinvar_splicing_variants_distance_matched.csv`.
+Distance-matched ClinVar subset: `D:\CAL_BIO\data\experiment_3\clinvar_splicing_variants_distance_matched.csv`.
 
 Model metrics on the distance-matched subset, if experiment-3 scores have been generated:
 
-| status        | reason                                                                                                                                  |
-|:--------------|:----------------------------------------------------------------------------------------------------------------------------------------|
-| not_available | Missing score table or empty matched subset: /home/hunter/Projects/cal_bio/results/experiment_3/tables/experiment_3A_variant_scores.csv |
+| status    | model                         |   rows |   auroc_distance_matched |   auprc_distance_matched |
+|:----------|:------------------------------|-------:|-------------------------:|-------------------------:|
+| available | RNA-FM frozen encoder + MLP   |    326 |                   0.6684 |                   0.6559 |
+| available | Pangolin real sequence model  |    326 |                   0.5902 |                   0.6416 |
+| available | CNN baseline (PyTorch Conv1D) |    326 |                   0.5625 |                   0.5666 |
+| available | RNABERT frozen encoder + MLP  |    326 |                   0.5155 |                   0.5442 |
+| available | SpliceAI real sequence model  |    326 |                   0.5135 |                   0.5693 |
+| available | MMSplice real sequence model  |    326 |                   0.5    |                   0.5    |
+| available | MaxEntScan real local score   |    326 |                   0.4668 |                   0.5496 |
 
 ClinVar overlap with experiment 1/2 split genes/chromosomes:
 
@@ -199,9 +207,9 @@ No paralog or homologous-gene clustering was applied. This is a limitation to st
 
 | resource    | field       | value                                                                            |
 |:------------|:------------|:---------------------------------------------------------------------------------|
-| gencode.gtf | description | evidence-based annotation of the human genome (GRCh38), version 50 (Ensembl 116) |
-| gencode.gtf | date        | 2026-04-08                                                                       |
-| clinvar.vcf | fileDate    | 2026-06-15                                                                       |
+| gencode.gtf | description | evidence-based annotation of the human genome (GRCh38), version 49 (Ensembl 115) |
+| gencode.gtf | date        | 2025-07-08                                                                       |
+| clinvar.vcf | fileDate    | 2026-05-30                                                                       |
 | clinvar.vcf | source      | ClinVar                                                                          |
 | clinvar.vcf | reference   | GRCh38                                                                           |
 
@@ -215,5 +223,5 @@ Random seed: 42.
 
 ## 9. 跨实验一致性
 
-Experiment 1/2 split uses GRCh38 + GENCODE v50 and chromosome holdout. Experiment 3 ClinVar windows use the same genome/annotation coordinate system and are restricted to held-out test chromosomes.
+Experiment 1/2 split uses the local GRCh38 + GENCODE annotation and chromosome holdout. Experiment 3 ClinVar windows use the same genome/annotation coordinate system and are restricted to held-out test chromosomes.
 
