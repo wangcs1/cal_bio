@@ -112,9 +112,17 @@ def add_value_labels(ax: plt.Axes, bars, values: pd.Series, fmt: str = "{:.3f}",
 
 
 def plot_exp1_macro_f1(out_dir: Path) -> None:
-    metrics = load_seed_preferred_table(
-        EXP1_TABLES_DIR / "experiment_1_metrics.csv",
-        EXP1_TABLES_DIR / "experiment_1_multiseed_metrics.csv",
+    # 3-seed mean +- std (matches table tab:exp1-test); CNN is non-deterministic,
+    # frozen encoders are deterministic (std = 0).
+    summary = pd.read_csv(
+        EXP1_TABLES_DIR / "experiment_1_multiseed_summary.csv", encoding="utf-8-sig"
+    )
+    metrics = pd.DataFrame(
+        {
+            "model": summary["model"],
+            "macro_f1": summary["macro_f1_mean"],
+            "macro_f1_std": summary["macro_f1_std"].fillna(0.0),
+        }
     ).sort_values("macro_f1")
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
     style_axes(ax)
@@ -122,19 +130,33 @@ def plot_exp1_macro_f1(out_dir: Path) -> None:
     bars = ax.barh(
         labels,
         metrics["macro_f1"],
+        xerr=metrics["macro_f1_std"],
         color=[model_color(model) for model in metrics["model"]],
         edgecolor="#2f2a24",
         linewidth=0.8,
         alpha=0.96,
+        error_kw={"ecolor": "#5a5247", "elinewidth": 1.2, "capsize": 4},
     )
+    reach = float((metrics["macro_f1"] + metrics["macro_f1_std"]).max())
     x_min = max(0.0, float(metrics["macro_f1"].min()) - 0.035)
-    x_max = min(1.006, float(metrics["macro_f1"].max()) + 0.035)
+    x_max = min(1.006, reach + 0.045)
     ax.axvspan(max(0.0, x_max - 0.02), x_max, color="#d7ead3", alpha=0.42, zorder=0)
     ax.axvline(float(metrics["macro_f1"].median()), color="#8c8172", linestyle="--", linewidth=1.0, alpha=0.75)
-    add_value_labels(ax, bars, metrics["macro_f1"], pad=0.0025)
+    for bar, (_, row) in zip(bars, metrics.iterrows()):
+        ax.text(
+            float(row["macro_f1"]) + float(row["macro_f1_std"]) + 0.0025,
+            bar.get_y() + bar.get_height() / 2,
+            f"{row['macro_f1']:.3f}",
+            va="center",
+            ha="left",
+            fontsize=9,
+            fontweight="bold",
+            color=DARK,
+            clip_on=False,
+        )
     ax.set_xlabel("Macro-F1")
     ax.set_title("Experiment 1: splice-site classification", fontsize=15, fontweight="bold", loc="left")
-    add_note(ax, "Zoomed axis is computed from the current real-data scores", x=0.015, y=0.965)
+    add_note(ax, "3-seed mean (error bars = std); frozen encoders are deterministic", x=0.015, y=0.965)
     ax.set_xlim(x_min, x_max)
     ax.grid(axis="x", color=GRID, alpha=0.55, linewidth=0.8)
     ax.grid(axis="y", visible=False)
@@ -142,14 +164,20 @@ def plot_exp1_macro_f1(out_dir: Path) -> None:
 
 
 def plot_exp2_context(out_dir: Path) -> None:
-    metrics = load_seed_preferred_table(
-        EXP2_TABLES_DIR / "experiment_2A_multiscale_context.csv",
-        EXP2_TABLES_DIR / "experiment_2_multiseed_metrics.csv",
+    # 3-seed mean +- std per window (matches table tab:exp2-context).
+    raw = pd.read_csv(EXP2_TABLES_DIR / "experiment_2_multiseed_metrics.csv")
+    metrics = raw.groupby(["model", "window_flank"], as_index=False).agg(
+        macro_f1=("macro_f1", "mean"),
+        macro_f1_std=("macro_f1", "std"),
+        auprc=("auprc", "mean"),
+        auprc_std=("auprc", "std"),
     )
+    metrics[["macro_f1_std", "auprc_std"]] = metrics[["macro_f1_std", "auprc_std"]].fillna(0.0)
     for metric, filename, ylabel in [
         ("macro_f1", "exp2A_context_macro_f1.png", "Macro-F1"),
         ("auprc", "exp2A_context_auprc.png", "Macro AUPRC"),
     ]:
+        std_col = f"{metric}_std"
         fig, ax = plt.subplots(figsize=(8.4, 5.0))
         style_axes(ax)
         for model, group in metrics.groupby("model", sort=False):
@@ -165,6 +193,18 @@ def plot_exp2_context(out_dir: Path) -> None:
                 label=short_model(model).replace("\n", " "),
             )
             ax.scatter(group["window_flank"], group[metric], s=70, color=color, edgecolor=PANEL, linewidth=1.0, zorder=3)
+            if float(group[std_col].abs().sum()) > 0:
+                ax.errorbar(
+                    group["window_flank"],
+                    group[metric],
+                    yerr=group[std_col],
+                    fmt="none",
+                    ecolor=color,
+                    elinewidth=1.1,
+                    capsize=3,
+                    alpha=0.7,
+                    zorder=2,
+                )
             end = group.iloc[-1]
             ax.annotate(
                 short_model(model).replace("\n", " "),
@@ -197,46 +237,46 @@ def plot_exp2_context(out_dir: Path) -> None:
 
 
 def plot_exp2_hard_negative(out_dir: Path) -> None:
-    hard = load_seed_preferred_table(
-        EXP2_TABLES_DIR / "experiment_2B_hard_negative.csv",
-        EXP2_TABLES_DIR / "experiment_2_multiseed_hard_negative_metrics.csv",
-    ).sort_values("hard_negative_fpr")
+    # +-200 nt hard-negative FPR averaged over seeds 42/43/44, matching the
+    # multi-seed table and section 4.3 text (CNN 0.297+-0.055, RNA-FM 0.310,
+    # RNABERT 0.329). Intervals overlap, so no model is highlighted as best/worst.
+    multiseed = pd.read_csv(EXP2_TABLES_DIR / "experiment_2_multiseed_metrics.csv")
+    pm200 = multiseed[multiseed["window_flank"] == 200]
+    hard = (
+        pm200.groupby("model")["hard_negative_fpr"]
+        .agg(fpr_mean="mean", fpr_std="std")
+        .reset_index()
+    )
+    hard["fpr_std"] = hard["fpr_std"].fillna(0.0)
+    hard = hard.sort_values("fpr_mean")
     fig, ax = plt.subplots(figsize=(8.4, 4.7))
     style_axes(ax)
     labels = [short_model(model) for model in hard["model"]]
-    colors = ["#c84f3d" if model.startswith("CNN") else model_color(model) for model in hard["model"]]
-    bars = ax.barh(labels, hard["hard_negative_fpr"], color=colors, edgecolor="#2f2a24", linewidth=0.8, alpha=0.96)
+    colors = [model_color(model) for model in hard["model"]]
+    bars = ax.barh(
+        labels,
+        hard["fpr_mean"],
+        xerr=hard["fpr_std"],
+        color=colors,
+        edgecolor="#2f2a24",
+        linewidth=0.8,
+        alpha=0.96,
+        error_kw={"ecolor": "#5a5247", "elinewidth": 1.3, "capsize": 4},
+    )
     for bar, (_, row) in zip(bars, hard.iterrows()):
-        label = f"{row['hard_negative_fpr']:.3f}  ({int(row['hard_negative_false_positives'])}/{int(row['hard_negative_rows'])})"
-        label_x = row["hard_negative_fpr"] + 0.012
-        if row["model"] == "RNABERT frozen encoder + MLP":
-            label_x = row["hard_negative_fpr"] + 0.035
         ax.text(
-            label_x,
+            row["fpr_mean"] + row["fpr_std"] + 0.014,
             bar.get_y() + bar.get_height() / 2,
-            label,
+            f"{row['fpr_mean']:.3f} $\\pm$ {row['fpr_std']:.3f}",
             va="center",
             ha="left",
             fontsize=9,
             fontweight="bold",
             color=DARK,
         )
-    cnn_fpr = float(hard.loc[hard["model"].str.startswith("CNN"), "hard_negative_fpr"].iloc[0])
-    best = hard.iloc[0]
-    reduction = 100.0 * (1.0 - float(best["hard_negative_fpr"]) / cnn_fpr)
-    ax.annotate(
-        f"{reduction:.0f}% lower FPR\nthan CNN",
-        xy=(float(best["hard_negative_fpr"]) + 0.006, 0.0),
-        xytext=(0.27, 0.42),
-        arrowprops={"arrowstyle": "->", "color": "#2f6f3e", "linewidth": 1.4},
-        va="center",
-        fontsize=10,
-        color="#2f6f3e",
-        fontweight="bold",
-    )
-    ax.set_xlabel("Hard-negative false positive rate")
-    ax.set_title("Experiment 2B: GT/AG hard-negative failure mode", fontsize=15, fontweight="bold", loc="left")
-    add_note(ax, "Lower is better; labels show FPR and false positives / 155 hard negatives")
+    ax.set_xlabel("Hard-negative false positive rate (mean $\\pm$ std over seeds 42/43/44)")
+    ax.set_title("Experiment 2: GT/AG hard-negative failure mode", fontsize=15, fontweight="bold", loc="left")
+    add_note(ax, "Lower is better; 155 hard negatives at $\\pm$200 nt; intervals overlap, no single best model")
     ax.set_xlim(0.0, 0.6)
     ax.grid(axis="x", color=GRID, alpha=0.60, linewidth=0.8)
     ax.grid(axis="y", visible=False)
@@ -245,19 +285,31 @@ def plot_exp2_hard_negative(out_dir: Path) -> None:
 
 def plot_exp3_metrics(out_dir: Path) -> None:
     base_metrics = pd.read_csv(EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv")
-    seeded_metrics = load_seed_preferred_table(
-        EXP3_TABLES_DIR / "experiment_3A_variant_metrics.csv",
-        EXP3_TABLES_DIR / "experiment_3_multiseed_metrics.csv",
+    # Trained models: 3-seed mean +- std (matches table tab:exp3-metrics);
+    # external tools: deterministic single run (std = 0).
+    summary = pd.read_csv(EXP3_TABLES_DIR / "experiment_3_multiseed_summary.csv")
+    trained = pd.DataFrame(
+        {
+            "model": summary["model"],
+            "auroc": summary["auroc_mean"],
+            "auprc": summary["auprc_mean"],
+            "auroc_std": summary["auroc_std"],
+            "auprc_std": summary["auprc_std"],
+        }
     )
     if "source" in base_metrics.columns:
         external = base_metrics[base_metrics["source"] == "real_external_tool"].copy()
-        metrics = pd.concat([seeded_metrics, external], ignore_index=True, sort=False)
     else:
-        metrics = seeded_metrics
+        external = base_metrics.copy()
+    external = external[["model", "auroc", "auprc"]].copy()
+    external["auroc_std"] = 0.0
+    external["auprc_std"] = 0.0
+    metrics = pd.concat([trained, external], ignore_index=True, sort=False)
     for metric, filename, label in [
         ("auroc", "exp3_variant_auroc.png", "AUROC"),
         ("auprc", "exp3_variant_auprc.png", "AUPRC"),
     ]:
+        std_col = f"{metric}_std"
         baseline = 0.5
         frame = metrics.sort_values(metric).copy()
         frame["gain"] = frame[metric] - baseline
@@ -268,14 +320,16 @@ def plot_exp3_metrics(out_dir: Path) -> None:
             labels,
             frame["gain"],
             left=baseline,
+            xerr=frame[std_col],
             color=[model_color(model) for model in frame["model"]],
             edgecolor="#2f2a24",
             linewidth=0.9,
             alpha=0.96,
+            error_kw={"ecolor": "#5a5247", "elinewidth": 1.2, "capsize": 3},
         )
         for bar, (_, row) in zip(bars, frame.iterrows()):
             ax.text(
-                float(row[metric]) + 0.006,
+                float(row[metric]) + float(row[std_col]) + 0.006,
                 bar.get_y() + bar.get_height() / 2,
                 f"{row[metric]:.3f}  (+{row['gain']:.3f})",
                 va="center",
@@ -311,7 +365,7 @@ def plot_exp3_metrics(out_dir: Path) -> None:
         )
         ax.set_xlabel(f"{label} (bar length shows gain above random baseline)")
         ax.set_title(f"Experiment 3: real ClinVar variant effect {label}", fontsize=15, fontweight="bold", loc="left")
-        add_note(ax, "Scores are sorted by full ClinVar performance; labels show absolute score and gain over 0.5")
+        add_note(ax, "Trained models: 3-seed mean (error bars = std); external tools: deterministic single run")
         upper = min(1.03, float(frame[metric].max()) + 0.10)
         ax.set_xlim(0.48, upper)
         ax.grid(axis="x", color=GRID, alpha=0.60, linewidth=0.8)
